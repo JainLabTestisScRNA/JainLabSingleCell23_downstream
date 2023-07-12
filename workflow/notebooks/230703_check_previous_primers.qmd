@@ -1,0 +1,159 @@
+---
+title: "Previous PCR primer check"
+format: 
+  html:
+    self-contained: true
+editor: visual
+---
+
+## 
+
+```{r}
+library(tidyverse)
+library(Biostrings)
+library(readxl)
+library(zoo)
+library(TxDb.Mmusculus.UCSC.mm10.ensGene)
+library(GenomicFeatures)
+library(org.Mm.eg.db)
+library("AnnotationDbi")
+```
+
+```{r}
+dtes <- readDNAStringSet("/media/mlawlor/work/JainLabSingleCell23_downstream/results/tradeseq/juvenile_13d_wt_null.cellranger.germ_cell.dysregulated_tes.fasta")
+
+primers <- read_xlsx("/media/mlawlor/work/JainLabSingleCell23_downstream/data/230628_qpcr_primers.xlsx")
+```
+
+Import primer seqs from Devanshi - see email 230628.
+
+```{r}
+# clean the spreadsheet
+primers$References <- na.locf(primers$References)
+primers$`Expected size` <- na.locf(primers$`Expected size`)
+
+primers <- primers |>
+  drop_na() |>
+  separate(`Primer name`,sep = "\\s(?=F$|R$)", into=c("target","primer.side")) |>
+  pivot_wider(names_from = primer.side, values_from = sequence) |>
+  mutate(dss = map2(`F`,`R`, ~{DNAStringSet(c(.x,.y))})) |>
+  mutate(target = str_replace_all(target," ","\\."))
+
+# export the primers
+primers |>
+  dplyr::select(target, `F`, R) |>
+  write_delim("~/Downloads/l1primers.txt",col_names = F, delim = " ")
+```
+
+Get TE seqs and cDNAs in one file.
+
+```{bash, eval=F}
+curl http://ftp.ensembl.org/pub/release-102/fasta/mus_musculus/cdna/Mus_musculus.GRCm38.cdna.all.fa.gz | gunzip -c > ~/Downloads/targets.fa
+
+cat /media/mlawlor/work/JainLabSingleCell23_downstream/data/dfam_sequences.fasta >> ~/Downloads/targets.fa
+```
+
+Run isPCR using provided primers against cDNAs and TEs. assumes ispcr is installed in an environment `ispcr` via conda.
+
+```{bash, engine.opts='-l'}
+eval "$(command conda 'shell.bash' 'hook' 2> /dev/null)"
+
+conda activate ispcr
+
+isPcr ~/Downloads/targets.fa ~/Downloads/l1primers.txt ~/Downloads/primer_results.tsv
+```
+
+Read in ispcr results, actually in a fasta format with info in fasta record headers.
+
+```{r}
+# actually in fasta format...
+ispcr_df <- readDNAStringSet("~/Downloads/primer_results.tsv") |>
+  names() |>
+  tibble(x=_) |>
+  separate(x, into=c("target.seq","coordinates","primer.name","amplicon.size","fprimer","rprimer"),sep="\\s|:") |>
+  mutate(amplicon.size = as.integer(str_remove(amplicon.size,"bp$")))
+
+ispcr_df2 <- primers |>
+  dplyr::select(primer.name=target, Expected.size=`Expected size`) |>
+  left_join(ispcr_df,y=_, by="primer.name") |>
+  mutate(label.size = sprintf("%s (%s)", amplicon.size, Expected.size)) |>
+  group_by(target.seq, primer.name) |>
+  summarise(label.size = paste(label.size, collapse = ",\n"), .groups = "drop") |>
+  mutate(hit=T)
+
+lkup <- readDNAStringSet("~/Downloads/targets.fa") |>
+  names() |>
+  tibble(x=_) |>
+  mutate(target.seq = str_extract(x, "^.+(?= cdna)"),
+         symbol  = str_extract(x, "(?<=gene_symbol:).+(?= description)")) |>
+  dplyr::select(target.seq, symbol)
+
+ispcr_df2 <- ispcr_df2 |>
+  left_join(lkup, by="target.seq") |>
+  mutate(symbol = ifelse(is.na(symbol),target.seq, symbol))
+```
+
+```{r}
+ispcr_df2 |>
+  ggplot(aes(symbol,primer.name, fill=hit)) +
+  geom_tile(color="black") +
+  theme(axis.text.x = element_text(angle=45, hjust=1)) +
+  geom_text(aes(label=label.size), size=rel(2)) +
+  scale_fill_grey(start = 0.5)
+```
+
+## HCR templates
+
+Now I make pairwise alignments with muscle for L1MdAs (2) and separately for the L1MdAs and a dysregulated L1MdTf
+
+```{r}
+library(msa)
+library(ggmsa)
+hcr_tes <- dtes[str_detect(names(dtes),"L1") & str_detect(names(dtes),"5end")]
+
+msa3 <- msa::msaMuscle(hcr_tes)
+msa3 <- as(msa3, "DNAMultipleAlignment")
+
+msa2 <- msa::msaMuscle(hcr_tes[str_detect(names(hcr_tes),"L1MdA")])
+msa2 <- as(msa2, "DNAMultipleAlignment")
+```
+
+```{r}
+msa_df <- tidy_msa(msa2) |>
+  as_tibble() |>
+  group_by(position) |>
+  summarise(cons = length(unique(character)), aln = sum(character!="-")) |>
+  mutate(aln_ma = (aln + lag(aln) + lead(aln) + lag(aln, 2) + lead(aln, 2))/5) 
+
+g_aln <- ggplot(msa_df) +
+  geom_path(aes(position, aln/2), color="red") +
+  labs(caption="total bases aligned / 2") +
+  ylab("% aligned") +
+  geom_vline(xintercept = 860, linetype="dashed") +
+  geom_vline(xintercept = 1120, linetype="dashed")
+
+g_cons <- ggplot(msa_df) +
+  geom_path(aes(position, 1/cons), color="blue") +
+  labs(caption="unique bases aligned / 2") +
+  ylab("% conserved") +
+  geom_vline(xintercept = 860, linetype="dashed") +
+  geom_vline(xintercept = 1120, linetype="dashed")
+
+g_aln / g_cons
+```
+
+There are some stretches of sequence that could do both L1MdAs at once.
+
+https://store.molecularinstruments.com/new-bundle/rna-fish
+
+```{r}
+hcr_tes[[1]][860:1120] |>
+  DNAStringSet() |>
+  writeXStringSet("~/Downloads/l1mda_hcr_candidate.fasta")
+```
+
+Blast to this chunk against mouse genomic + transcriptomic db on blast web yields no hits.
+
+```{r}
+sessionInfo()
+```

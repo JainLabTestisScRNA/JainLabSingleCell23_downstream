@@ -1,0 +1,13 @@
+genes: data/genes.gtf.gz
+te_sequences: data/dfam_sequences.fasta
+
+
+cellranger_matrices:
+  juvenile_13d_wt_null: data/cellranger/custom/raw_feature_bc_matrix/
+
+
+cellranger_cmo_assignment:
+  juvenile_13d_wt_null: data/cellranger/custom/assignment_confidence_table.csv
+
+celltype_assignment:
+  juvenile_13d_wt_null: data/celltype_classification_per_barcode.csv

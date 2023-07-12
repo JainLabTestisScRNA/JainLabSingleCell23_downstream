@@ -1,0 +1,19 @@
+configfile: "config/config.yaml"
+
+wildcard_constraints:
+    experiment= "juvenile_13d_wt_null",
+    subset= "germ_cell",
+    quant_tool= "cellranger"
+
+
+include: "rules/single-cell-preproc.smk"
+include: "rules/trajectory.smk"
+
+rule all:
+    input:
+        "results/single-cell-preproc/preprocessed/juvenile_13d_wt_null.cellranger.sce.passing_cells.rds",
+        "results/trajectory/juvenile_13d_wt_null.cellranger.sce.germ_cell.trajectory.rds",
+        "results/tradeseq/juvenile_13d_wt_null.cellranger.germ_cell.deg.rds",
+        "results/tradeseq/juvenile_13d_wt_null.cellranger.germ_cell.gene_clusters.tsv",
+        "results/tradeseq/juvenile_13d_wt_null.cellranger.germ_cell.clusterprofiler.rds",
+        "results/tradeseq/juvenile_13d_wt_null.cellranger.germ_cell.dysregulated_tes.fasta"

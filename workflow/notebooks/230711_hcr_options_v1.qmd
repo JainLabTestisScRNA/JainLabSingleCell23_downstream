@@ -1,0 +1,158 @@
+---
+title: "HCR choices"
+format: 
+  html:
+    self-contained: true
+editor: visual
+---
+
+Using JainLabSingleCell23 first commit
+
+https://github.com/mal2017/JainLabSingleCell23/commit/cd6048affe594e3644a07a5a28605923f1d2e535
+
+```{r}
+#| warning: false
+
+library(tidyverse)
+library(scater)
+library(scran)
+library(scuttle)
+library(tradeSeq)
+library(patchwork)
+```
+
+```{r}
+#| warning: false
+
+sce <- read_rds("~/work/JainLabSingleCell23_downstream/results/tradeseq/juvenile_13d_wt_null.cellranger.sce.germ_cell.tradeseq.rds")
+
+sce$Sample <- factor(sce$Sample)
+
+
+dysreg <- read_tsv("~/work/JainLabSingleCell23_downstream/results/tradeseq/juvenile_13d_wt_null.cellranger.germ_cell.gene_clusters.tsv")
+
+deg_df <- read_rds("~/work/JainLabSingleCell23_downstream/results/tradeseq/juvenile_13d_wt_null.cellranger.germ_cell.deg.rds")
+```
+
+```{r}
+
+plotUMAP(sce, colour_by="slingPseudotime_1",text_by="sublabel2")
+```
+
+## dysregulated genes via tradeseq
+
+```{r}
+deg_df |> 
+  filter(str_detect(feature, "^L1") & padj < 0.1) |>
+  arrange(-waldStat) |>
+  head(10) |>
+  gt::gt()
+```
+
+```{r}
+dysreg |>
+  filter(str_detect(feature,"^L1.+5end")) |>
+  pull(feature) |>
+  scater::plotExpression(sce, features = _ ,x="sublabel2") +
+  theme(axis.text.x = element_text(angle=45, hjust=1))
+```
+
+L1MdA_I and L1MdTf are the most expressed of the 3 options.
+
+```{r}
+l1_deg <- deg_df |> 
+  filter(str_detect(feature, "^L1.+5end") & padj < 0.1) |>
+  pull(feature)
+
+l1_deg |> #
+  set_names() |>
+  imap(.f= function(x,y) {
+      tradeSeq::plotSmoothers(sce, assays(sce)$counts,
+              gene = x) + labs(subtitle = y)
+  }) |>
+  Reduce(`+`, x=_) +
+  plot_layout(guides="collect",ncol=length(l1_deg)) &
+  theme(legend.position = "bottom")
+```
+
+```{r}
+l1_all <- deg_df |> 
+  filter(str_detect(feature, "^L1.+5end")) |>
+  pull(feature)
+
+scater::plotExpression(sce, features = l1_all ,x="sublabel2") +
+  theme(axis.text.x = element_text(angle=45, hjust=1)) +
+  facet_wrap(~Feature, ncol = 6)
+```
+
+## DE between samples, per cluster
+
+We are only looking at TEs here, bc with multiple testing correction nearly all TEs are not DE. This is reasonable bc we already know that TEs are DE at the protein level, so subjecting TEs to the same stringent requirements as host genes, especially when they're lowly expressed, seems extreme.
+
+Using this as an orthologous approach to tradeseq - do we see same/similar results?
+
+```{r}
+de_tbl <- tibble(label = unique(sce$sublabel2))
+
+get_sample_markers <-  function(lab, dat=sce[!str_detect(rownames(sce),"ENSMUSG"),]) {
+  dat$Sample <- as.factor(dat$Sample)
+  dat <- dat[,dat$sublabel2 == lab]
+  
+  pairwiseTTests(dat, groups=dat$Sample)
+}
+
+de_tbl <- de_tbl |>
+  mutate(de = map(label, get_sample_markers))
+
+de_tbl <- de_tbl |>
+  mutate(de_combined = map(de, ~enframe(as.list(combineMarkers(.x$statistics,.x$pairs)),name="numerator",value="res"))) |>
+  unnest(de_combined) |>
+  filter(numerator == "CMO306") |>
+  mutate(res= map(res,as_tibble,rownames="feature"))
+
+de_tbl <- dplyr::select(de_tbl,-de) |>
+  unnest(res)
+```
+
+```{r}
+de_tbl |> 
+  arrange(FDR) |>
+  left_join(as_tibble(rowData(sce))[,c("gene_id","gene_name")], by=c(feature="gene_id")) |>
+  filter(FDR < 0.1) |>
+  filter(str_detect(feature,"^L1.+5end")) |>
+  gt::gt()
+```
+
+Slight differences in the two methods for DE.
+
+## expectation check
+
+```{r}
+l1_deg |>
+  set_names() |>
+  map(~{
+    scater::makePerCellDF({x <- sce; x$slingshot <- NULL; x}, features = .x) |>
+  dplyr::select(c(.x,Barcode, Sample, sublabel2)) |>
+  pivot_longer(-c(Barcode,Sample,sublabel2)) |>
+  pivot_wider(names_from = "name", values_from = "value") |>
+  ggplot(aes_string("sublabel2",.x,fill="Sample")) +
+  geom_violin(position = position_dodge(width = 0.8)) +
+  stat_summary(position = position_dodge(width = 0.8)) +
+  labs(title=.x)
+  }) |>
+  Reduce(`+`,x=_) + plot_layout(guides="collect") & theme(axis.text.x = element_text(angle=45, hjust=1))
+
+```
+
+## blast results
+
+For blast results of L1 sequences vs transcriptome (refseq_select), see collab slides from late june 2023, early july 2023. Briefly, L1Mda_I_5end only matches a single host gene (RIKEN cDNA F8300116B08, NM_00101475.2) at \~84% identity. L1MdA_II matches a few more, as does L1MdTf. see \[the gene's ensembl page\](https://useast.ensembl.org/Mus_musculus/Gene/Summary?g=ENSMUSG00000090942;r=18:60426452-60436088;t=ENSMUST00000171297).
+
+```{r}
+scater::plotExpression(sce, features = "ENSMUSG00000090942" ,x="sublabel2") +
+  theme(axis.text.x = element_text(angle=45, hjust=1))
+```
+
+```{r}
+sessionInfo()
+```
