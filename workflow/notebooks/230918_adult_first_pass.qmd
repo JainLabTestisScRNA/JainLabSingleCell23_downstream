@@ -1,0 +1,249 @@
+---
+title: "Untitled"
+format: 
+  html:
+    self-contained: true
+editor: visual
+warning: false
+---
+
+```{r}
+library(tidyverse)
+library(bluster)
+library(scater)
+library(scran)
+library(scuttle)
+library(patchwork)
+```
+
+## before integration embedding
+
+```{r}
+g_pca_uncorrected <- read_rds("~/work/JainLabSingleCell23_downstream/results/single-cell-preproc/integrated/adult.cellranger.g_pca_uncorrected.rds")
+
+g_tsne_uncorrected <- read_rds("~/work/JainLabSingleCell23_downstream/results/single-cell-preproc/integrated/adult.cellranger.g_tsne_uncorrected.rds")
+
+g_umap_uncorrected <- read_rds("~/work/JainLabSingleCell23_downstream/results/single-cell-preproc/integrated/adult.cellranger.g_umap_uncorrected.rds")
+
+
+g_pca_uncorrected + g_tsne_uncorrected + g_umap_uncorrected & 
+scale_color_brewer(type="qual",palette = 6)
+```
+
+## post-integration clustering
+
+```{r}
+sce <- read_rds("~/work/JainLabSingleCell23_downstream/results/single-cell-preproc/integrated/adult.cellranger.sce.passing_cells.rds")
+
+lkup <- rowData(sce) |> as_tibble(rownames("gene_id")) |> dplyr::select(gene_name, gene_id) |> deframe()
+
+rev_lkup <- rowData(sce) |> as_tibble(rownames("gene_id")) |> dplyr::select(gene_id, gene_name) |> deframe()
+```
+
+```{r}
+counts(sce) |> as.vector() |> hist()
+```
+
+```{r}
+plotReducedDim(sce, dimred="TSNE", colour_by = "batch", other_fields = "batch",text_by = "label")
+
+plotReducedDim(sce, dimred="TSNE", colour_by = "batch", other_fields = "batch",text_by = "label") + facet_wrap(~batch)
+```
+
+```{r}
+set.seed(20)
+nn.clust <- clusterCells(sce, use.dimred="corrected",
+                         BLUSPARAM=NNGraphParam(cluster.fun="leiden",k =125,BPPARAM = BiocParallel::MulticoreParam(4)))
+
+colLabels(sce) <- nn.clust
+
+plotReducedDim(sce, dimred="TSNE", colour_by = "label", other_fields = "batch",text_by = "label")
+
+plotReducedDim(sce, dimred="TSNE", colour_by = "label", other_fields = "batch",text_by = "label") + facet_wrap(~batch)
+```
+
+```{r}
+sil.approx <- approxSilhouette(reducedDim(sce, "corrected"), clusters=colLabels(sce)) |>
+  as_tibble(rownames = "Barcode")
+
+sil.approx$closest <- factor(ifelse(sil.approx$width > 0, colLabels(sce), sil.approx$other))
+sil.approx$cluster <- colLabels(sce)
+
+g_silhouette <- ggplot(sil.approx, aes(x=cluster, y=width, colour=closest)) +
+  geom_jitter()
+```
+
+## germ cell candidate clusters
+
+```{r}
+plot_my_umap <- \(x) plotReducedDim(sce[,order(counts(sce)[lkup[x],])], dimred="TSNE", colour_by = x,swap_rownames = "gene_name", other_fields = "batch",text_by = "label")
+```
+
+```{r}
+# PGC (cl)
+plotExpression(sce, features=c("Sox2","Nanog","Pou5f1"),x="label",swap_rownames = "gene_name",ncol = 3)
+
+
+plot_my_umap("Pou5f1")
+
+plot_my_umap("Etv5")
+
+plot_my_umap("Nanog")
+
+plot_my_umap("Sox2")
+```
+
+```{r}
+#SPG
+
+plot_my_umap("Gfra1")
+
+plot_my_umap("Zbtb16")
+
+plot_my_umap("Egr2")
+```
+
+```{r}
+plotDots(sce,features = factor(c("Pou5f1","Sox2","Etv5","Nanog","Nanos3","Tex14","Tmc2","Gfra1","Zbtb16","Egr2","Cartpt")),swap_rownames = "gene_name",group = "label", scale = T, center = T) + theme_gray()
+```
+
+```{r}
+
+plotReducedDim(sce[,order(counts(sce)[lkup["Prdm1"],])], dimred="UMAP", colour_by = "Prdm1",swap_rownames = "gene_name", other_fields = "batch",text_by = "label")
+
+
+plotReducedDim(sce[,order(counts(sce)[lkup["Dppa3"],])], dimred="UMAP", colour_by = "Dppa3",swap_rownames = "gene_name", other_fields = "batch",text_by = "label")
+
+
+```
+
+```{r}
+plotReducedDim(sce[,order(counts(sce)[lkup["Kit"],])], dimred="UMAP", colour_by = "Kit",swap_rownames = "gene_name", other_fields = "batch",text_by = "label")
+
+
+plotReducedDim(sce[,order(counts(sce)[lkup["Pecam1"],])], dimred="UMAP", colour_by = "Pecam1",swap_rownames = "gene_name", other_fields = "batch",text_by = "label")
+
+```
+
+```{r}
+plotReducedDim(sce[,order(counts(sce)[lkup["Dazl"],])], dimred="UMAP", colour_by = "Dazl",swap_rownames = "gene_name", other_fields = "batch",text_by = "label")
+
+plotReducedDim(sce[,order(counts(sce)[lkup["Ddx4"],])], dimred="UMAP", colour_by = "Ddx4",swap_rownames = "gene_name", other_fields = "batch",text_by = "label")
+
+plotReducedDim(sce[,order(counts(sce)[lkup["Ddx4"],])], dimred="UMAP", colour_by = "Ddx4",swap_rownames = "gene_name", other_fields = "batch",text_by = "label")
+```
+
+```{r}
+
+```
+
+```{r}
+
+plotExpression(sce, features=c("Ddx4","Sycp3","Tex14"),x="label",swap_rownames = "gene_name",ncol = 3)
+
+plotExpression(sce[,sce$label == "8"], features=c("Tex14"),x="batch",swap_rownames = "gene_name",ncol = 3)
+
+
+plotExpression(sce[,sce$label == "1"], features=c("Tex14"),x="batch",swap_rownames = "gene_name",ncol = 3)
+
+
+plotExpression(sce[,sce$label == "3"], features=c("Tex14"),x="batch",swap_rownames = "gene_name",ncol = 3)
+```
+
+```{r}
+
+
+plotReducedDim(sce[,order(counts(sce)[lkup["Tex14"],])], dimred="UMAP", colour_by = "Tex14",swap_rownames = "gene_name", other_fields = "batch",text_by = "label")
+
+plotReducedDim(sce[,order(counts(sce)[lkup["Ddx4"],])], dimred="UMAP", colour_by = "Ddx4",swap_rownames = "gene_name", other_fields = "batch")
+
+plotReducedDim(sce[,order(counts(sce)[lkup["Sycp3"],])], dimred="UMAP", colour_by = "Sycp3",swap_rownames = "gene_name", other_fields = "batch")
+```
+
+```{r}
+marker.genes <- scoreMarkers(sce,sce$label,block="Sample")
+
+markers_to_tbl <- \(x) map_df(x, as_tibble,rownames="feature",.id="label")
+
+tes <- rownames(subset(rowData(sce),gene_biotype== "repeat_element")) 
+
+marker_df <- marker.genes |>
+  markers_to_tbl()
+
+marker_df$feature_type <- if_else(marker_df$feature %in% tes,"te","gene")
+
+marks.to.use <- filter(marker_df,feature_type == "gene") |>
+  filter(!str_detect(feature,"^mt-")) |>
+  filter(self.detected > 0.75) |>
+  group_by(label) |>
+  slice_max(mean.AUC,n=5) |>
+  ungroup() |>
+  pull(feature) |>
+  unique() |>
+   map_chr(~{rev_lkup[.x]})
+
+tes.to.use <- filter(marker_df,feature_type != "gene") |>
+  filter(!str_detect(feature,"^mt-")) |>
+  filter(self.detected > 0.5) |>
+  group_by(label) |>
+  slice_max(mean.AUC,n=5) |>
+  ungroup() |>
+  pull(feature) |>
+  unique()
+
+
+colnames(sce) <- colnames(sce) |> make.unique()
+
+scater::plotHeatmap(sce, features = marks.to.use, fontsize=9,swap_rownames = "gene_name",
+            group = "label",zlim = c(-4,4),
+            center =T,
+            color_columns_by = c("label","Sample"),
+            order_columns_by = c("label","Sample"))
+
+
+scater::plotHeatmap(sce, features = tes.to.use, 
+            group = "label",zlim = c(-4,4),
+            center =T,scale=T,
+            color_columns_by = c("label","Sample"),
+            order_columns_by = c("label","Sample"))
+```
+
+## inter condition (best guess)
+
+```{r}
+
+# best guess for now
+sce$genotype <- case_when(sce$Sample %in% c("adult1","adult3") ~ "WT",
+          T ~ "mut")
+
+de_tbl <- tibble(label = levels(sce$label))
+
+get_sample_markers <-  function(lab, dat=sce) {
+  dat <- dat[,dat$label == as.integer(lab)]
+  
+  pairwiseTTests(dat, groups=dat$genotype)
+}
+
+de_tbl <- de_tbl |>
+  mutate(de = map(label, get_sample_markers))
+
+de_tbl <- de_tbl |>
+  mutate(de_combined = map(de, ~enframe(as.list(combineMarkers(.x$statistics,.x$pairs)),name="numerator",value="res"))) |>
+  unnest(de_combined) |>
+  filter(numerator == "mut") |>
+  mutate(res= map(res,as_tibble,rownames="feature"))
+
+de_tbl <- dplyr::select(de_tbl,-de) |>
+  unnest(res)
+
+
+de_tbl |>
+  filter(feature == lkup["Tex14"])
+
+filter(de_tbl, !str_detect(feature,"ENSMUSG")) |>
+  filter(FDR < 0.001) |>
+  filter(label==1) |>
+  arrange(-summary.logFC)
+  filter(summary.logFC >0)
+
+```

@@ -61,7 +61,7 @@ metadata(uncorrected)$highly.variable.tes <- hvtes
 metadata(uncorrected)$highly.variable.genes <- chosen
 
 # PCA - without influence of mito genes or TEs
-uncorrected <- runPCA(uncorrected, subset_row=chosen)
+uncorrected <- runPCA(uncorrected, subset_row=chosen, ncomponents=10)
 
 g_pc_elbow_uncorrected <- tibble(percent.var = attr(reducedDim(uncorrected), "percentVar")) |>
   mutate(PC = row_number()) |>
@@ -96,8 +96,8 @@ mnn.out <- fastMNN(uncorrected,
                    batch = uncorrected$batch, 
                    subset.row=chosen, 
                    correct.all = T, 
-                   BSPARAM=BiocSingular::RandomParam(deferred = T),
-                   BPPARAM = BiocParallel::MulticoreParam(8))
+                   BSPARAM=BiocSingular::RandomParam(deferred = T))#,
+                   #BPPARAM = BiocParallel::MulticoreParam(4))
 
 g_pca_corrected <- plotReducedDim(mnn.out, dimred = "corrected",colour_by = "batch")
 
@@ -106,9 +106,9 @@ g_pca_corrected <- plotReducedDim(mnn.out, dimred = "corrected",colour_by = "bat
 # ------------------------------------------------------------------------------
 
 set.seed(2)
-mnn.out <- runUMAP(mnn.out, dimred="corrected")
+mnn.out <- runUMAP(mnn.out, dimred="corrected", pca=5)
 set.seed(2)
-mnn.out <- runTSNE(mnn.out, dimred="corrected")
+mnn.out <- runTSNE(mnn.out, dimred="corrected", pca=5)
 
 g_umap_corrected <- plotReducedDim(mnn.out, dimred = "UMAP", colour_by = "batch")
 g_tsne_corrected <- plotReducedDim(mnn.out, dimred = "TSNE", colour_by = "batch")
@@ -131,6 +131,9 @@ reducedDims(corrected) <- reducedDims(mnn.out)
 rowData(corrected)$rotation <- rowData(mnn.out)$rotation
 
 metadata(corrected) <- metadata(mnn.out)
+
+#lkup <- rowData(corrected) |> as_tibble(rownames("gene_id")) |> dplyr::select(gene_name, gene_id) |> deframe()
+#plotReducedDim(corrected[,order(counts(corrected)[lkup["Ddx4"],])],"UMAP", colour_by= lkup["Ddx4"])
 
 write_rds(corrected,snakemake@output$rds)
 write_rds(g_pca_uncorrected, snakemake@output$g_pca_uncorrected)

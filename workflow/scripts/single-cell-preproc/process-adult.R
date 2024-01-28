@@ -51,10 +51,10 @@ g_kneeplot <- as_tibble(bcrank) |>
   scale_x_log10() +
   geom_hline(yintercept = metadata(bcrank)$inflection, color="red") +
   geom_hline(yintercept = metadata(bcrank)$knee, color="blue") +
-  geom_hline(yintercept = 1000, color="darkgreen")
+  geom_hline(yintercept = 2500, color="darkgreen")
 
 
-sce <- sce[,colSums(counts(sce)) > 500]
+sce <- sce[,colSums(counts(sce)) > 2500]
 
 # ------------------------------------------------------------------------------
 # doublet removal

@@ -8,6 +8,10 @@ groupings:
 
 cellranger_matrices:
   juvenile_13d_wt_null: data/cellranger/custom/raw_feature_bc_matrix/
+  adult_9646_1:
+  adult_9646_2:
+  adult_9682_1:
+  adult_9682_2:
   adult1: data/cellranger/custom_adult/adult1/raw_feature_bc_matrix.h5
   adult2: data/cellranger/custom_adult/adult2/raw_feature_bc_matrix.h5
   adult3: data/cellranger/custom_adult/adult3/raw_feature_bc_matrix.h5

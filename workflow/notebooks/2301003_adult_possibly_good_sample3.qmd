@@ -1,0 +1,371 @@
+---
+title: "Untitled"
+format: 
+  html:
+  self-contained: true
+editor: visual
+---
+
+## 
+
+Having trouble with integrated 4-sample analysis - markers and clusters haven't made much sense. So going back to basics to develop something that looks sane for each individually, and seeing if there is common ground.
+
+```{r}
+library(tidySingleCellExperiment)
+library(scater)
+library(scran)
+library(scuttle)
+library(bluster)
+library(tidyverse)
+library(DropletUtils)
+library(scater)
+library(scran)
+library(scuttle)
+library(ggdensity)
+library(scDblFinder)
+library(flexmix)
+library(celda)
+library(bluster)
+library(tidyverse)
+library(patchwork)
+library(BiocParallel)
+```
+
+The basic import should be fine - not much going on there.
+
+```{r}
+sce_fl <- "results/single-cell-preproc/count/import/adult3.cellranger.sce.rds"
+
+raw_fl <- "results/single-cell-preproc/count/raw/adult3.cellranger.sce.rds"
+
+```
+
+```{r}
+
+sce <- read_rds(sce_fl)
+raw <- read_rds(raw_fl)
+
+```
+
+## doublet detection
+
+```{r}
+# get logcounts
+sce <- logNormCounts(sce,assay.type="counts")
+
+# find doublets
+set.seed(2)
+scdbf <- scDblFinder(sce,clusters = T)
+
+# perform filt
+sce <- sce[,scdbf$scDblFinder.class == "singlet"]
+```
+
+## basic qc
+
+```{r}
+is.mito <- grep("chrM",as.character(seqnames(sce)))
+
+is.te <- rowData(sce)$gene_biotype %in% c("repeat_element") & !rowData(sce)$gene_biotype %in% c("7SLRNA")
+
+sce <- addPerCellQCMetrics(sce,subsets=(list(MT=is.mito,
+                                             Rpl = names(sce)[str_detect(rowData(sce)$gene_name,"^Rpl\\d{1,2}")],
+                                             Rps = names(sce)[str_detect(rowData(sce)$gene_name,"^Rps\\d{1,2}")],
+                                             TE=is.te,
+                                             `7SLRNA`=names(sce)[str_detect(names(sce),"7SL")])))
+
+```
+
+```{r}
+qc_df <- sce |>
+  as_tibble() |>
+  dplyr::select(.cell, Sample, sum,detected,matches(regex("subsets_.+percent")))
+
+
+ggplot(qc_df, aes(sum,subsets_MT_percent)) +
+  geom_point() +
+  scale_x_log10()
+
+ggplot(qc_df, aes(sum,subsets_Rpl_percent)) +
+  geom_point()
+
+ggplot(qc_df, aes(sum,subsets_Rps_percent.2)) +
+  geom_point()
+
+ggplot(qc_df, aes(sum,detected)) +
+  geom_point() +
+  scale_y_log10() +
+  scale_x_log10()
+
+```
+
+```{r}
+discard.mito.madTop <- isOutlier(sce$subsets_MT_percent, type="higher", nmads=3)
+mito_cut <- attr(discard.mito.madTop,"thresholds")["higher"]
+
+g_mito_cuts <- tibble(total.decont.umis = sce$sum,
+       mito.percent = sce$subsets_MT_percent) |>
+  ggplot(aes(total.decont.umis,mito.percent)) +
+  geom_hline(yintercept = mito_cut, color="red") +
+  geom_point() +
+  scale_x_log10()
+
+sce <- sce[,!discard.mito.madTop]
+
+g_mito_cuts
+
+```
+
+```{r}
+# ------------------------------------------------------------------------------
+# remove low dimension cells - very few features expressed, likely another class of dying cells
+# but either way not super informative and tends to screw up trajectory analyses later on
+# in many cases there aren't any of these
+discard.nexpres.madlower <- isOutlier(sce$detected, type="lower", nmads=3)
+
+sce <- sce[,!discard.nexpres.madlower]
+
+sum(discard.nexpres.madlower)
+```
+
+## normalization
+
+```{r}
+
+# ------------------------------------------------------------------------------
+# renormalize (previously used simple norm for scbdlfinder), deconvolution norm for actual analysis
+
+sce$sizeFactor <- NULL
+logcounts(sce) <- NULL
+
+clust.pre <- quickCluster(sce)
+
+# occasionally get warning about negative size factors - use positive=T to enforce positivity
+sce <- computeSumFactors(sce,cluster=clust.pre,positive=T)
+
+sce <- logNormCounts(sce)
+```
+
+## variable feats
+
+```{r}
+# ------------------------------------------------------------------------------
+# variable feature selection
+
+dec <- modelGeneVar(sce)
+hvg.var <- getTopHVGs(dec, prop = 0.3)
+
+tes <- rowData(sce)[rowData(sce)$gene_biotype %in% "repeat_element",] |> rownames()
+
+hvtes <- hvg.var[hvg.var %in% tes]
+
+#& 
+chosen <- hvg.var[!hvg.var %in% tes]
+
+rowSubset(sce) <- chosen
+metadata(sce)$highly.variable.tes <- hvtes
+metadata(sce)$highly.variable.genes <- chosen
+
+```
+
+## PCA
+
+```{r}
+# PCA - without influence of TEs
+sce <- runPCA(sce, subset_row=chosen)
+
+g_pc_elbow <- tibble(percent.var = attr(reducedDim(sce), "percentVar")) |>
+  mutate(PC = row_number()) |>
+  ggplot(aes(PC, percent.var)) +
+  geom_point()
+
+g_pc_elbow
+```
+
+## embedding
+
+```{r}
+# UMAP
+set.seed(2)
+sce <- runUMAP(sce, dimred="PCA", n_threads=4, pca=5)
+```
+
+```{r}
+plotUMAP(sce)
+```
+
+## basic clusters
+
+```{r}
+
+set.seed(20)
+nn.clust <- clusterCells(sce, use.dimred="PCA", full=TRUE, assay.type=NULL,
+                         BLUSPARAM=NNGraphParam(cluster.fun="leiden",k =75))
+
+colLabels(sce) <- nn.clust$clusters
+```
+
+```{r}
+plotUMAP(sce,colour_by="label", text_by = "label")
+```
+
+## markers
+
+### 
+
+```{r}
+oi <- c("Alpl", #pgc general
+  "Kit", # migrating pgc
+  "Dazl",#mitotic pgc
+  "Ddx4",#vasa,mitotic pgc, general
+  "Zbtb16",# spg,
+  "Etv5", 
+  "Dnmt3l",
+  "Tspan8",
+    "Pecam1",
+  "Mmp9",
+  "Lhx1",
+  "Gfra1",
+  "Nanos3",
+  "Lin28a",
+  "Esx1",
+  "Prss50",
+  "Sycp3", # spc
+  "Meiob",
+  "Tex36",  #spd
+  "Prm1",
+  "Cstl1",
+  "Insl3",
+  "Cyp17a1","Sox9","Tcf21") # soma
+  
+
+g_dot <- plotDots(sce,features = oi,swap_rownames = "gene_name",group = "label",center = T, scale=T)
+
+g_dot$data$Feature <- fct_relevel(g_dot$data$Feature,oi)
+
+g_dot
+```
+
+```{r}
+g_dot_line <- plotDots(sce,features = rownames(sce)[str_detect(rownames(sce),"L1MdA")]
+                  ,group = "label",center = T, scale=T)
+
+```
+
+```{r}
+lkup <- rowData(sce) |> as_tibble(rownames("gene_id")) |> dplyr::select(gene_name, gene_id) |> deframe()
+
+rev_lkup <- rowData(sce) |> as_tibble(rownames("gene_id")) |> dplyr::select(gene_id, gene_name) |> deframe()
+
+plot_my_umap <- \(x) plotReducedDim(sce[,order(counts(sce)[lkup[x],])], dimred="UMAP", colour_by = x,swap_rownames = "gene_name")
+```
+
+### pgc markers
+
+see Zhao et al. Ncomms, 2021
+
+https://static-content.springer.com/esm/art%3A10.1038%2Fs41467-021-27172-0/MediaObjects/41467_2021_27172_MOESM1_ESM.pdf
+
+```{r}
+plot_my_umap("Pou5f1")
+```
+
+```{r}
+plot_my_umap("Sox2")
+```
+
+```{r}
+plot_my_umap("Prdm1")
+
+```
+
+```{r}
+plot_my_umap("Dppa3")
+```
+
+```{r}
+plot_my_umap("Tfap2c")
+
+```
+
+```{r}
+plot_my_umap("Alpl")
+```
+
+### migrating pgcs
+
+```{r}
+plot_my_umap("Kit")
+```
+
+```{r}
+plot_my_umap("Pecam1")
+```
+
+```{r}
+plot_my_umap("T")
+```
+
+```{r}
+plot_my_umap("Eomes")
+```
+
+```{r}
+plot_my_umap("Ahnak")
+```
+
+## mitotic pgcs
+
+should be most germ cells for ddx4/vasa, not spermatocytes or spermatids for Dazl
+
+```{r}
+plot_my_umap("Dazl")
+```
+
+```{r}
+plot_my_umap("Ddx4")
+```
+
+### spermatogonia
+
+```{r}
+plot_my_umap("Etv5")
+```
+
+```{r}
+plot_my_umap("Zbtb16")
+```
+
+### spermatocytes
+
+```{r}
+plot_my_umap("Sycp3")
+```
+
+```{r}
+plot_my_umap("Meiob")
+```
+
+### spermatid
+
+```{r}
+plot_my_umap("Tex36")
+```
+
+```{r}
+plot_my_umap("Prm1")
+```
+
+```{r}
+plot_my_umap("Cstl1")
+```
+
+### soma
+
+```{r}
+plot_my_umap("Cyp17a1")
+```
+
+```{r}
+plot_my_umap("Insl3")
+```
