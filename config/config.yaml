@@ -1,30 +1,20 @@
 genes: data/genes.gtf.gz
 te_sequences: data/dfam_sequences.fasta
 
-groupings:
-  adult: ['adult1', 'adult2', 'adult3', 'adult4']
-  juvenile: ['juvenile_13d_wt_null']
-
-
 cellranger_matrices:
-  juvenile_13d_wt_null: data/cellranger/custom/raw_feature_bc_matrix/
-  adult_9646_1:
-  adult_9646_2:
-  adult_9682_1:
-  adult_9682_2:
-  adult1: data/cellranger/custom_adult/adult1/raw_feature_bc_matrix.h5
-  adult2: data/cellranger/custom_adult/adult2/raw_feature_bc_matrix.h5
-  adult3: data/cellranger/custom_adult/adult3/raw_feature_bc_matrix.h5
-  adult4: data/cellranger/custom_adult/adult4/raw_feature_bc_matrix.h5
-
-cellranger_filtered_matrices:
-  adult1: data/cellranger/custom_adult/adult1/filtered_feature_bc_matrix.h5
-  adult2: data/cellranger/custom_adult/adult2/filtered_feature_bc_matrix.h5
-  adult3: data/cellranger/custom_adult/adult3/filtered_feature_bc_matrix.h5
-  adult4: data/cellranger/custom_adult/adult4/filtered_feature_bc_matrix.h5
+  juvenile_13d_wt_null: data/cellranger/juvenile_13d_wt_null/raw_feature_bc_matrix/
+  adult_9646_combined: data/cellranger/adult_9646/raw_feature_bc_matrix/
+  adult_9682_combined: data/cellranger/adult_9682/raw_feature_bc_matrix/
 
 cellranger_cmo_assignment:
-  juvenile_13d_wt_null: data/cellranger/custom/assignment_confidence_table.csv
+  juvenile_13d_wt_null: data/cellranger/juvenile_13d_wt_null/assignment_confidence_table.csv
+  adult_9646_combined: data/cellranger/adult_9646/assignment_confidence_table.csv
+  adult_9682_combined: data/cellranger/adult_9682/assignment_confidence_table.csv
 
 celltype_assignment:
-  juvenile_13d_wt_null: data/celltype_classification_per_barcode.csv
+  juvenile_13d_wt_null: data/celltype_classification_per_barcode.csv # from umich collabs
+
+garnett_classifier:
+  adult_9646_combined: data/green2018_garnett_adult_testis_classifier.txt
+  adult_9682_combined: data/green2018_garnett_adult_testis_classifier.txt
+  adult: data/green2018_garnett_adult_testis_classifier.txt

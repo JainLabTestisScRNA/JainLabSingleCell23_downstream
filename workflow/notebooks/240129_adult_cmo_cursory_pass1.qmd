@@ -1,0 +1,93 @@
+---
+title: "Adult CMO cursory first pass"
+format: html
+editor: visual
+---
+
+```{r setup}
+library(tidyverse)
+library(scran)
+library(scater)
+library(scuttle)
+```
+
+```{r}
+fls <- "~/work/JainLabSingleCell23_downstream_v2/results/single-cell-preproc/preprocessed/adult*.cellranger.sce.passing*.rds" |>
+  Sys.glob()
+
+germ_ct <- c("Elongating","RoundSpermatid","Spermatocyte","Spermatogonia")
+sces <- set_names(fls, str_extract(fls,"(?<=preprocessed\\/).+(?=\\.cellranger)")) |>
+  map(read_rds) |>
+  imap(~{.x$dataset <- .y;.x}) |>
+  map(~{.x[,.x$celltype %in% germ_ct]})
+
+te_names <- Biostrings::readDNAStringSet("~/work/JainLabSingleCell23_downstream_v2/data/dfam_sequences.fasta") |>
+  names()
+
+dysreg_names <- Biostrings::readDNAStringSet("~/work/JainLabSingleCell23_downstream_v2/results/tradeseq/juvenile_13d_wt_null.cellranger.germ_cell.dysregulated_tes.fasta") |>
+  names()
+
+l1s <- te_names[str_detect(te_names,"^L1")]
+```
+
+```{r warning=FALSE}
+marker.genes <- map(sces,~scoreMarkers(.x,.x$celltype,block="Sample"))
+
+markers_to_tbl <- \(x) map_df(x, as_tibble,rownames="feature",.id="celltype")
+
+marker_df <- marker.genes |>
+  map_df(markers_to_tbl)
+
+marker_df$feature_type <- if_else(marker_df$feature %in% te_names,"te","gene")
+```
+
+```{r}
+# marker tes
+tes.to.use <- filter(marker_df,feature_type != "gene") |>
+  filter(!str_detect(feature,"^mt-")) |>
+  filter(self.detected > 0.5) |>
+  group_by(celltype) |>
+  slice_max(mean.AUC,n=5) |>
+  ungroup() |>
+  pull(feature) |>
+  unique()
+
+```
+
+```{r}
+
+
+
+
+a <- scater::plotHeatmap(sces$adult_9646_1, features =dysreg_names, fontsize=9,
+            group = "label2",zlim = c(-2,2),
+            center =T,scale = T,
+            color_columns_by = c("celltype","Sample"),
+            cluster_cols = T) 
+
+b <- scater::plotHeatmap(sces$adult_9646_2, features = dysreg_names, fontsize=9,
+            group = "label2",zlim = c(-2,2),
+            center =T,scale = T,
+            color_columns_by = c("celltype","Sample"),
+            cluster_cols = T)
+
+
+c <- scater::plotHeatmap(sces$adult_9682_1, features = dysreg_names, fontsize=9,
+            group = "label2",zlim = c(-2,2),
+            center =T,scale = T,
+            color_columns_by = c("celltype","Sample"),
+            cluster_cols = T)
+
+d <- scater::plotHeatmap(sces$adult_9682_2, features = dysreg_names, fontsize=9,
+            group = "label2",zlim = c(-2,2),
+            center =T,scale = T,
+            color_columns_by = c("celltype","Sample"),cluster_cols = T)
+```
+
+```{r}
+plotExpression(sces$adult_9646_1, x=c("Sample") , features = "Tex14", swap_rownames = "gene_name") + labs(title="9646_1")
+plotExpression(sces$adult_9646_2, x=c("Sample") , features = "Tex14", swap_rownames = "gene_name") + labs(title="9646_2")
+plotExpression(sces$adult_9682_1, x=c("Sample") , features = "Tex14", swap_rownames = "gene_name") + labs(title="9682_1")
+plotExpression(sces$adult_9682_2, x=c("Sample") , features = "Tex14", swap_rownames = "gene_name") + labs(title="9682_2")
+
+```
