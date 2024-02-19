@@ -1,0 +1,360 @@
+---
+title: "Meeting 2/19/24"
+format: 
+  html:
+    self-contained: true
+editor: visual
+---
+
+```{r setup, message=F}
+
+knitr::opts_knit$set(root.dir = here::here())
+
+library(tidyverse)
+library(scater)
+library(scran)
+library(scuttle)
+library(clusterProfiler)
+library(org.Mm.eg.db)
+library(tidytext)
+library(slingshot)
+
+theme_set(theme_classic())
+```
+
+```{r}
+read_rds("~/work/JainLabSingleCell23_downstream_v2/results/single-cell-preproc/preprocessed/adult_9646_combined.cellranger.g_mito_cuts.rds") + labs(title="9646")
+```
+
+```{r}
+read_rds("~/work/JainLabSingleCell23_downstream_v2/results/single-cell-preproc/preprocessed/adult_9682_combined.cellranger.g_mito_cuts.rds") + labs(title="9682")
+```
+
+## Post-integration overview
+
+```{r}
+sce <- read_rds("~/work/JainLabSingleCell23_downstream_v2/results/single-cell-preproc/integrated/adult.cellranger.sce.integrated.rds")
+```
+
+```{r}
+plotUMAP(sce,colour_by="celltype",text_by="celltype")
+```
+
+```{r}
+plotUMAP(sce,colour_by="label2",text_by="label2")
+```
+
+```{r}
+makePerCellDF(sce) |>
+  ggplot(aes(batch,fill=genotype)) +
+  geom_bar(position="dodge") +
+  scale_fill_grey()
+```
+
+```{r}
+makePerCellDF(sce) |>
+  ggplot(aes(celltype,fill=genotype)) +
+  geom_bar(position="dodge") +
+  scale_fill_grey() +
+  facet_wrap(~batch,ncol=1) +
+  theme(axis.text.x = element_text(angle=45, hjust=1))
+```
+
+```{r}
+makePerCellDF(sce) |>
+  ggplot(aes(celltype,nexprs,fill=genotype)) +
+  geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1))
+```
+
+## Germ cell trajectory
+
+```{r}
+germ_sce <- read_rds("~/work/JainLabSingleCell23_downstream_v2/results/trajectory/adult.cellranger.sce.germ_cell.trajectory.rds")
+
+germ_sce_exportable <- germ_sce
+germ_sce_exportable$slingshot <- NULL
+
+embedded <- embedCurves(germ_sce, "UMAP")
+embedded <- slingCurves(embedded)[[1]] # only 1 path.
+embedded <- data.frame(embedded$s[embedded$ord,])
+
+get_ps_umap <- \(x,lab,text=NULL) plotUMAP(x, colour_by=lab, text_by=text) +
+  geom_path(data=embedded[seq(nrow(embedded)-300),], aes(x=Dim.1, y=Dim.2), size=1.2, arrow = arrow(length=unit(0.30,"cm"), ends="last", type = "closed")) +
+  labs(title=unique(x$genotype))
+
+
+```
+
+```{r, fig.height=4, fig.width=10}
+get_ps_umap(germ_sce[,germ_sce$genotype==c("WT")],"celltype") +
+get_ps_umap(germ_sce[,germ_sce$genotype==c("MUT")],"celltype")
+
+```
+
+```{r, fig.height=6, fig.width=15}
+get_ps_umap(germ_sce[,germ_sce$genotype==c("WT")],"label2","label2") +
+get_ps_umap(germ_sce[,germ_sce$genotype==c("MUT")],"label2","label2")
+
+```
+
+### TRADE-seq
+
+```{r}
+trade_res <- read_rds("results/tradeseq/adult.cellranger.sce.germ_cell.tradeseq.rds")
+trade_res$slingshot <- NULL
+library(tradeSeq)
+gtade <- tradeSeq::plotSmoothers(trade_res,
+                                 counts=logcounts(trade_res),
+                                 gene="L1MdA_I_5end",
+                        lwd=1, 
+                        nPoints=10)
+
+
+```
+
+```{r}
+# --------------- dysreg in adjult vs juvenile
+
+adult_dysreg <- names(Biostrings::readDNAStringSet("results/tradeseq/adult.cellranger.germ_cell.dysregulated_tes.fasta"))
+
+juv_dysreg <- names(Biostrings::readDNAStringSet("results/tradeseq/juvenile_13d_wt_null.cellranger.germ_cell.dysregulated_tes.fasta"))
+
+dysreg <- list(adult=adult_dysreg, juvenile=juv_dysreg) |>
+  enframe() |>
+  unnest(value) |>
+  mutate(dysregulated=T) |>
+  pivot_wider(names_from = name, values_from = dysregulated,values_fill = F)
+
+filter(dysreg,str_detect(value,"^L1")) |>
+  gt::gt()
+
+filter(dysreg,!str_detect(value,"^L1")) |>
+  gt::gt()
+
+intersect(adult_dysreg, juv_dysreg)
+```
+
+## Differential expression
+
+```{r}
+plot_ma <- function(obj,lab=NULL) {
+    mutate(obj,type = if_else(str_detect(feature,"ENSMUSG"),"gene","TE")) |>
+    arrange(desc(type)) |>
+    ggplot(aes(logCPM,logFC,color=type)) +
+    geom_point() +
+    labs(title=lab) +
+    scale_color_manual(values=c("TE"="red","gene"="gray"))
+}
+
+plot_de <- function(obj,lab=NULL) {
+    mutate(obj,type = if_else(str_detect(feature,"ENSMUSG"),"gene","TE")) |>
+    arrange(desc(type)) |>
+    ggplot(aes(logFC,-log10(PValue),color=type)) +
+    geom_point() +
+    labs(title=lab)  +
+    scale_color_manual(values=c("TE"="red","gene"="gray"))
+}
+```
+
+### RS 17 vs RS 1
+
+```{r}
+summed.sub <- sce[,sce$label2 %in% c("17/RoundSpermatid", "1/RoundSpermatid") & sce$genotype == "MUT"]
+summed.sub$label2 <- summed.sub$label2 |> factor() |> relevel(ref="1/RoundSpermatid")
+
+between.res <- pseudoBulkDGE(summed.sub,
+    label=rep("dummy", ncol(summed.sub)),
+    design=~batch + label2,
+    condition=summed.sub$label2,
+    coef="label217/RoundSpermatid")[[1]]
+
+between.res |> 
+  as_tibble(rownames="feature") |>
+  drop_na() |>
+  plot_ma(lab="RS17 vs RS1")
+```
+
+### between genotype for each celltype
+
+```{r}
+
+de <- read_tsv("results/differential_expression/adult.tbl.pseudobulk.de.tsv.gz")
+```
+
+### MA-plots
+
+```{r}
+
+
+plot_ma(filter(de,celltype=="Spermatogonia"),lab = "Spermatogonia")
+plot_ma(filter(de,celltype=="Spermatocyte"),lab = "Spermatocyte")
+plot_ma(filter(de,celltype=="RoundSpermatid"),lab = "RoundSpermatid")
+```
+
+### Volcanos
+
+```{r}
+
+plot_de(filter(de,celltype=="Spermatogonia"),lab = "Spermatogonia")
+plot_de(filter(de,celltype=="Spermatocyte"),lab = "Spermatocyte")
+plot_de(filter(de,celltype=="RoundSpermatid"),lab = "RoundSpermatid")
+```
+
+```{r}
+de |>
+  filter(celltype == "RoundSpermatid" & FDR < 0.05) |>
+  arrange(-logFC) |>
+  dplyr::select(feature,logFC,logCPM) |>
+  head() |>
+  gt::gt()
+```
+
+```{r}
+# confirming direction of LFCs make sense
+makePerCellDF(germ_sce_exportable, features = "ENSMUSG00000090487") |>
+  ggplot(aes(celltype,ENSMUSG00000090487,fill=genotype)) +
+  geom_violin(scale = "width") +
+  coord_cartesian(ylim=c(0,1))
+```
+
+### GO term enrichment
+
+```{r, message=F}
+go_enrichment <-filter(de,
+                       celltype%in%c("Spermatogonia",
+                                     "Spermatocyte",
+                                     "RoundSpermatid")) %>%
+  filter(str_detect(feature,"ENSMUSG")) %>%
+  split(.,.$celltype) |>
+  map(~dplyr::select(.x,feature,logFC)) |>
+  map(deframe) |>
+  map(sort,decreasing=T) |>
+  map(~gseGO(.x,ont = "ALL",OrgDb=org.Mm.eg.db,keyType="ENSEMBL",
+             maxGSSize =500, 
+             minGSSize = 10,
+             seed = 2022,
+             nPermSimple = 10000,
+             eps=0))
+
+go_df <- go_enrichment |>
+  map_df(as_tibble,.id="celltype")
+```
+
+```{r fig.height=20, fig.width=10}
+go_df |>
+  filter(p.adjust < 0.05) |>
+  group_by(celltype,sign(NES)) |>
+  slice_max(-log10(pvalue),n=20) |>
+  group_by(celltype) |>
+  filter(n()>3) |>
+  ungroup() |>
+  mutate(Description=reorder_within(Description,sign(NES)*-log10(pvalue),within=celltype)) |>
+  ggplot(aes(-log10(pvalue)*sign(NES),Description)) +
+  geom_col() +
+  facet_wrap(~celltype,scales="free",ncol=1) +
+  scale_y_reordered() +
+  xlab("signed log10(p)")
+```
+
+```{r}
+library("AnnotationDbi")
+
+
+go_df |>
+  filter(Description=="methylated histone binding") |>
+  filter(celltype=="Spermatocyte") |>
+  pull(core_enrichment) |>
+  head(1) |>
+  str_split("/") |>
+  pluck(1) |>
+  mapIds(org.Mm.eg.db,keys=_,column="SYMBOL", keytype="ENSEMBL", multiVals="first") |>
+  walk(message)
+```
+
+```{r}
+de |> filter(feature == "ENSMUSG00000034610") # tut4
+de |> filter(feature == "ENSMUSG00000035248") # tut7
+```
+
+### DE TEs
+
+```{r}
+de |>
+  filter(FDR < 0.05) |>
+  mutate(type= if_else(str_detect(feature,"ENSMUSG"),"gene","TE")) |>
+  dplyr::count(celltype,type,direction=if_else(logFC > 0,"increased","decreased")) |>
+  pivot_wider(names_from = "direction",values_from = "n",values_fill = 0) |>
+  gt::gt(rowname_col = "celltype")
+```
+
+```{r}
+rs_de_tes <- de |> 
+  filter(celltype=="RoundSpermatid") |>
+  filter(!str_detect(feature,"ENSMUSG")) |>
+  mutate(direction=case_when(FDR>=0.05~"ns",
+                             logFC >0~"increased",
+                             logFC <0~"decreased",
+                             T~NA)) |>
+  dplyr::select(celltype,feature,direction,logFC) 
+
+```
+
+```{r, fig.height=10}
+rs_de_tes |>
+  filter(direction!="ns") |>
+  mutate(feature=fct_reorder(feature,logFC)) |>
+  ggplot(aes(logFC,feature)) +
+  geom_col() +
+  facet_grid(~direction,scales = "free",space = "free")
+```
+
+### DFAM hits
+
+Note this is from mm10, but ref we're using is GRCm39.
+
+```{r}
+dfam_hits <- read_tsv("~/Downloads/mm10.nrph.hits.gz")
+
+
+dfh2 <- dfam_hits |>
+  dplyr::select(chr=`#seq_name`,start=`ali-st`,end=`ali-en`,feature=family_name,kimura_div,seqlen=`sq-len`) |>
+  right_join(rs_de_tes)
+```
+
+```{r}
+dfh2 |>
+  ggplot(aes(direction,kimura_div)) +
+  geom_boxplot()
+```
+
+```{r}
+dfh2 |>
+  filter(str_detect(chr,"chrY|chrX")) |>
+  mutate(chr2 = if_else(str_detect(chr,"chrY"),"chrY",'chrX')) |>
+  ggplot(aes(direction,kimura_div)) +
+  geom_boxplot() +
+  facet_wrap(~chr2)
+```
+
+```{r fig.height=60, fig.width=10}
+dfh2 |>
+  #filter(direction == "increased") |>
+  filter(!str_detect(chr,"_")) |>
+  ggplot(aes(start,color=direction)) +
+  geom_density() +
+  facet_wrap(~chr,scales="free_x",ncol=1) +
+  theme(axis.text.x = element_text(angle=45,hjust=1))
+```
+
+```{r}
+dfh2 |>
+  filter(direction!="ns") |>
+  group_by(feature,chr,direction,seqlen) |>
+  tally() |>
+  mutate(hits_per_mb = n/(seqlen/1e6)) |>
+  ggplot(aes(feature,chr,fill=hits_per_mb)) +
+  geom_tile() +
+  facet_wrap(~direction,ncol = 2,scales="free_x") +
+  theme(axis.text.x = element_text(angle=90,hjust=1,vjust=0.5))
+```

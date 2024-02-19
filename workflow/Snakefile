@@ -1,13 +1,14 @@
 configfile: "config/config.yaml"
 
 wildcard_constraints:
-    experiment= "juvenile_13d_wt_null|adult_9646_combined|adult_9682_combined",
+    experiment= "juvenile_13d_wt_null|adult_9646_combined|adult_9682_combined|adult",
     subset= "germ_cell",
     quant_tool= "cellranger"
 
 include: "rules/cellranger-import.smk"
 include: "rules/single-cell-preproc.smk"
 include: "rules/trajectory.smk"
+include: "rules/differential_expression.smk"
 
 rule all:
     input:
@@ -21,3 +22,13 @@ rule all:
         "results/tradeseq/juvenile_13d_wt_null.cellranger.germ_cell.gene_clusters.tsv",
         "results/tradeseq/juvenile_13d_wt_null.cellranger.germ_cell.clusterprofiler.rds",
         "results/tradeseq/juvenile_13d_wt_null.cellranger.germ_cell.dysregulated_tes.fasta",
+
+        ## adult trajectory
+        "results/trajectory/adult.cellranger.sce.germ_cell.trajectory.rds",
+        "results/tradeseq/adult.cellranger.germ_cell.deg.rds",
+        "results/tradeseq/adult.cellranger.germ_cell.gene_clusters.tsv",
+        "results/tradeseq/adult.cellranger.germ_cell.clusterprofiler.rds",
+        "results/tradeseq/adult.cellranger.germ_cell.dysregulated_tes.fasta",
+
+        ## adult de
+        "results/differential_expression/adult.tbl.pseudobulk.de.tsv.gz",

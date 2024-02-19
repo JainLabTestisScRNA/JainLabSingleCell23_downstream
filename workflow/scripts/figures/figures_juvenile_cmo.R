@@ -9,7 +9,7 @@ g_k_choice <- read_rds("results/tradeseq/juvenile_13d_wt_null.cellranger.germ_ce
 # smoothed timecourse + clustering
 res <- read_rds("results/tradeseq/juvenile_13d_wt_null.cellranger.germ_cell.smoothed_cluster_timecourse.rds")
 
-ord <- res |> filter(condition=="wt") |>
+ord <- res |> filter(condition=="WT") |>
   group_by(cluster, pseudotime.bin) |>
   summarise(yhatScaled = mean(yhatScaled)) |>
   group_by(cluster) |>

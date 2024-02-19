@@ -12,10 +12,10 @@ library(bluster)
 # ------------------------------------------------------------------------------
 # files
 
-sce_fl <- "results/single-cell-preproc/import/juvenile_13d_wt_null.cellranger.sce.rds"
+sce_fl <- "results/single-cell-preproc/multi/import/juvenile_13d_wt_null.cellranger.sce.rds"
 sce_fl <- snakemake@input$sce
 
-raw_fl <- "results/single-cell-preproc/raw/juvenile_13d_wt_null.cellranger.sce.rds"
+raw_fl <- "results/single-cell-preproc/multi/raw/juvenile_13d_wt_null.cellranger.sce.rds"
 raw_fl <- snakemake@input$raw
 
 celltype_fl <- "data/celltype_classification_per_barcode.csv"
@@ -27,6 +27,22 @@ cmo_fl <- snakemake@input$sample_assignments
 # import sce objs + add known cell types
 
 sce <- read_rds(sce_fl)
+
+sce$Sample <- sce$Assignment |>
+  map_chr(~{
+    if (.x == "CMO306") {
+      return("MUT")
+    } else if (.x == "CMO309") {
+      return("WT")
+    } else {
+      return(NA)
+    }
+  })
+
+sce$genotype <- sce$Sample
+
+sce$condition <- sce$Sample
+
 raw <- read_rds(raw_fl) # for ambient rna removal step
 
 celltype <- read_csv(celltype_fl)

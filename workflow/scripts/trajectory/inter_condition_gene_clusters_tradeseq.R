@@ -49,17 +49,10 @@ res <- yhatSmooth |>
 
 res <- left_join(res, id_lkup, by="feature") |> relocate(gene_name, .after = "feature")
 
-mutant <- "CMO306"
-wt <- "CMO309"
-
-res <- res |>
-  mutate(condition = case_when(condition==mutant ~ "mutant",
-                               condition==wt ~"wt",
-                               T~condition))
 res <- res |>
   dplyr::select(lineage, feature,yhat, condition, pseudotime.bin) |>
   pivot_wider(names_from = "condition", values_from = "yhat") |>
-  mutate(lfcMutant.WT = log2((mutant+1)/(wt+1))) |>
+  mutate(lfcMutant.WT = log2((MUT+1)/(WT+1))) |>
   dplyr::select(lineage, feature, pseudotime.bin, lfcMutant.WT) |>
   left_join(res,y=_, by=c("lineage","feature","pseudotime.bin"))
 

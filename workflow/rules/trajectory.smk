@@ -10,6 +10,14 @@ rule juvenile_germ_trajectory:
     script:
         "../scripts/trajectory/juvenile_germ_trajectory.R"
 
+rule adult_germ_trajectory:
+    input:
+        sce = "results/single-cell-preproc/integrated/adult.cellranger.sce.integrated.rds",
+    output:
+        rds = "results/trajectory/adult.cellranger.sce.germ_cell.trajectory.rds",
+    script:
+        "../scripts/trajectory/adult_germ_trajectory.R"
+
 
 
 """

@@ -6,4 +6,6 @@ results/
 .Rproj.user
 RM*/
 data/
-*env/
+renv/*
+!renv/settings.json
+!renv/activate.R
