@@ -1,0 +1,77 @@
+---
+title: "Check bc overlaps"
+format: 
+  html:
+    self-contained: true
+editor: visual
+---
+
+```{r setup}
+library(tidyverse)
+library(ggVennDiagram)
+
+knitr::opts_knit$set(root.dir = here::here())
+```
+
+```{r message=F}
+
+fls <- c("adult_9646_1","adult_9646_2","adult_9682_1","adult_9682_2")
+
+fls <- fls |> set_names() |> 
+  map(~sprintf("data/cellranger/%s/assignment_confidence_table.csv",x=.x)) |>
+  map(here::here)
+
+df <- map_df(fls, read_csv,.id="seqrun")
+
+
+```
+
+```{r}
+df |>
+  filter(str_detect(Assignment,"CMO")) |>
+  count(seqrun,Assignment) |>
+  ggplot(aes(seqrun,n,fill=Assignment)) +
+  geom_col(position="dodge",color="black") +
+  scale_fill_brewer(type="qual",palette = 2) +
+  theme_classic()
+```
+
+```{r}
+sets <- df |>
+  filter(str_detect(Assignment,"CMO")) |>
+  dplyr::select(seqrun,Barcode) |>
+  group_by(seqrun) |>
+  summarise(Barcode = list(Barcode)) |>
+  deframe()
+```
+
+```{r}
+ggVennDiagram(sets) + scale_fill_gradient(low="grey90",high = "red")
+```
+
+```{r}
+#  sanity check numbers from plot
+
+intersect(sets$adult_9646_1,sets$adult_9646_2)
+intersect(sets$adult_9682_1,sets$adult_9682_2)
+```
+
+```{r message=F}
+library(scater)
+library(scran)
+library(scuttle)
+
+sce <- read_rds(here::here("results/single-cell-preproc/integrated/adult.cellranger.sce.integrated.rds"))
+```
+
+```{r}
+sets2 <- makePerCellDF(sce) |>
+  as_tibble() |>
+  dplyr::select(Sample,Barcode) |>
+  group_by(Sample) |>
+  summarise(Barcode = list(Barcode)) |>
+  deframe()
+
+
+ggVennDiagram(sets2)
+```

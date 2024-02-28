@@ -52,24 +52,15 @@ rule preprocess_adult_cmo:
         8
     output:
         rds = "results/single-cell-preproc/preprocessed/{experiment}.cellranger.sce.passing_cells.rds",
-        g_dcx = "results/single-cell-preproc/preprocessed/{experiment}.cellranger.g_dcx.rds", #decontx umap
         g_mito_cuts = "results/single-cell-preproc/preprocessed/{experiment}.cellranger.g_mito_cuts.rds", # viz of mito cutoffs
         g_pc_elbow = "results/single-cell-preproc/preprocessed/{experiment}.cellranger.g_pc_elbow.rds", # N pc choice
-        g_coarse_clustering_sweep = "results/single-cell-preproc/preprocessed/{experiment}.cellranger.g_coarse_clustering_sweep.rds", # viz of clustering sweeps
-        nn_clust = "results/single-cell-preproc/preprocessed/{experiment}.cellranger.nn_clust.rds", # igraph obj of clustering
-        g_silhouette = "results/single-cell-preproc/preprocessed/{experiment}.cellranger.g_silhouette.rds", # silhouette plot
-        sce_mito_warning = "results/single-cell-preproc/preprocessed/{experiment}.cellranger.sce.mito_warning.rds", # cells below hard cutoff, but still very high mito
-        sce_sertoli = "results/single-cell-preproc/preprocessed/{experiment}.cellranger.sce.sertoli.rds", # sertoli cells
-        sce_germ_cell = "results/single-cell-preproc/preprocessed/{experiment}.cellranger.sce.germ_cell.rds", # germ cells
-        sce_somatic_non_macro = "results/single-cell-preproc/preprocessed/{experiment}.cellranger.sce.somatic_non_macro.rds", # somatic cells that are not macrophages
-        sce_macrophage = "results/single-cell-preproc/preprocessed/{experiment}.cellranger.sce.macrophage.rds", # macrophages
     script:
         "../scripts/single-cell-preproc/process-adult-cmo.R"
 
 
 rule integrate_adult_cmo:
     input:
-        sces = expand("results/single-cell-preproc/preprocessed/{e}.cellranger.sce.passing_cells.rds",e=["adult_9646_combined","adult_9682_combined"]),
+        sces = expand("results/single-cell-preproc/preprocessed/{e}.cellranger.sce.passing_cells.rds",e=["adult_9646_1","adult_9682_1","adult_9646_2","adult_9682_2"]),
         garnett_fl = config.get("garnett_classifier").get("adult"),
     output:
         rds = "results/single-cell-preproc/integrated/adult.cellranger.sce.integrated.rds",

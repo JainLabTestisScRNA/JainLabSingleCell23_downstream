@@ -12,10 +12,10 @@ library(pheatmap)
 library(TSCAN)
 library(slingshot)
 
-threads <- ifelse(exists("snakemake"), snakemake@threads, 8)
+threads <- ifelse(exists("snakemake"), snakemake@threads, 2)
 knots <- ifelse(exists("snakemake"), snakemake@params$knots, 5)
 
-sce_fl <- "results/trajectory/juvenile_13d_wt_null.cellranger.sce.germ_cell.trajectory.rds"
+sce_fl <- "results/trajectory/adult.cellranger.sce.germ_cell.trajectory.rds"
 sce_fl <- snakemake@input$sce
 
 sce <- readRDS(sce_fl)
@@ -47,7 +47,7 @@ sce <- fitGAM(counts = sce,
               #cellWeights = pathStat(sce$slingshot,i="weights"), 
               conditions = factor(sce$Sample), 
               nknots = knots, 
-              BPPARAM = BiocParallel::MulticoreParam(threads),
+              #BPPARAM = BiocParallel::MulticoreParam(threads),
               genes = hvf_ix)
 
 write_rds(sce, snakemake@output$rds)

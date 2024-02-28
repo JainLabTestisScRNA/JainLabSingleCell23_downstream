@@ -30,7 +30,7 @@ reducedDims(sce) <- NULL
 
 # get hvgs - recompute for germ only for higher granularity
 dec <- modelGeneVar(sce,block=sce$batch)
-hvg.var <- getTopHVGs(dec, n=5000)
+hvg.var <- getTopHVGs(dec, n=1000)
 
 tes <- rowData(sce)[rowData(sce)$gene_biotype %in% "repeat_element",] |> rownames()
 hvtes <- hvg.var[hvg.var %in% tes]
@@ -43,12 +43,13 @@ stopifnot(all(rownames(sce)[rowSubset(sce)] %in% chosen))
 
 pcx <- multiBatchPCA(sce,batch=sce$batch,subset.row = rowSubset(sce))
 
-reducedDim(sce,"PCA") <- rbind(pcx$batch9682,pcx$batch9646)[colnames(sce),]
+reducedDim(sce,"PCA") <- rbind(pcx$batch9682_2, pcx$batch9682_1,pcx$batch9646_1,pcx$batch9646_2)[colnames(sce),]
 
 set.seed(2)
-sce <- runUMAP(sce, n_neighbors=25, spread=2,  min_dist=1, n_trees=75, n_dimred=5,dimred="PCA")
+sce <- runUMAP(sce, n_neighbors=20, min_dist=0.5, n_trees=75, n_dimred=5,dimred="PCA")
 
 plotReducedDim(sce, dimred = "UMAP", colour_by="batch",text_by = "label2",swap_rownames="gene_name")
+plotReducedDim(sce, dimred = "UMAP", colour_by="batch",text_by = "label2",swap_rownames="gene_name",other_fields = "genotype") + facet_wrap(~genotype)
 
 # ------------------------------------------------------------------------------
 # compute entropy

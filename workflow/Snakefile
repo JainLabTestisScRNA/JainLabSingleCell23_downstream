@@ -16,12 +16,12 @@ rule all:
         expand("results/single-cell-preproc/preprocessed/{x}.cellranger.sce.passing_cells.rds",x=config.get("cellranger_matrices")),
         "results/single-cell-preproc/integrated/adult.cellranger.sce.integrated.rds",
 
-        ## juvenile trajectory
-        # "results/trajectory/juvenile_13d_wt_null.cellranger.sce.germ_cell.trajectory.rds",
-        "results/tradeseq/juvenile_13d_wt_null.cellranger.germ_cell.deg.rds",
-        "results/tradeseq/juvenile_13d_wt_null.cellranger.germ_cell.gene_clusters.tsv",
-        "results/tradeseq/juvenile_13d_wt_null.cellranger.germ_cell.clusterprofiler.rds",
-        "results/tradeseq/juvenile_13d_wt_null.cellranger.germ_cell.dysregulated_tes.fasta",
+        # ## juvenile trajectory
+        # # "results/trajectory/juvenile_13d_wt_null.cellranger.sce.germ_cell.trajectory.rds",
+        # "results/tradeseq/juvenile_13d_wt_null.cellranger.germ_cell.deg.rds",
+        # "results/tradeseq/juvenile_13d_wt_null.cellranger.germ_cell.gene_clusters.tsv",
+        # "results/tradeseq/juvenile_13d_wt_null.cellranger.germ_cell.clusterprofiler.rds",
+        # "results/tradeseq/juvenile_13d_wt_null.cellranger.germ_cell.dysregulated_tes.fasta",
 
         ## adult trajectory
         "results/trajectory/adult.cellranger.sce.germ_cell.trajectory.rds",
@@ -30,5 +30,5 @@ rule all:
         "results/tradeseq/adult.cellranger.germ_cell.clusterprofiler.rds",
         "results/tradeseq/adult.cellranger.germ_cell.dysregulated_tes.fasta",
 
-        ## adult de
+        # ## adult de
         "results/differential_expression/adult.tbl.pseudobulk.de.tsv.gz",

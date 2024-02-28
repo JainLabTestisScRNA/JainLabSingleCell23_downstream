@@ -5,6 +5,38 @@ library(tidyverse)
 library(patchwork)
 library(slingshot)
 
+
+de <- read_tsv("results/differential_expression/adult.tbl.pseudobulk.de.tsv.gz")
+
+filter(de,!str_detect(feature,"ENSMUSG") & FDR < 0.05) |>
+  ggplot(aes(celltype,logFC)) +
+  geom_boxplot() +
+  geom_jitter()
+
+
+
+
+
+
+scemw <- read_rds("results/single-cell-preproc/preprocessed/adult_9646_combined.cellranger.sce.mito_warning.rds")
+sce <- read_rds("results/single-cell-preproc/preprocessed/adult_9646_combined.cellranger.sce.passing_cells.rds")
+
+any(colnames(scemw) %in% colnames(sce))
+
+df <- makePerCellDF(sce) |>
+  as_tibble() |>
+  dplyr::select(contains("subsets"),mito_warning)
+
+dfmw <-  makePerCellDF(scemw) |>
+  as_tibble() |>
+  dplyr::select(contains("subsets"),mito_warning)
+
+
+bind_rows(df,dfmw) |>
+  ggplot(aes(subsets_MT_percent,subsets_TE_percent,color=mito_warning)) +
+  geom_point() +
+  scale_y_log10()
+
 germ_sce <- read_rds("results/trajectory/adult.cellranger.sce.germ_cell.trajectory.rds")
 germ_sce_exportable <- germ_sce
 germ_sce_exportable$slingshot <- NULL

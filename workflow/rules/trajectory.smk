@@ -29,7 +29,7 @@ rule within_experiment_subset_tradeseq:
     """
     input:
         sce = "results/trajectory/{experiment}.{quant_tool}.sce.{subset}.trajectory.rds",
-    threads: 8,
+    threads: 2,
     params:
         knots = 5,
     output:

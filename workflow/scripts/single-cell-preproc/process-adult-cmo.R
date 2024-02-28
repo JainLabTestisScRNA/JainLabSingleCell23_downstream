@@ -8,6 +8,7 @@ library(scDblFinder)
 library(flexmix)
 library(celda)
 library(bluster)
+library(PCAtools)
 
 # ------------------------------------------------------------------------------
 # files
@@ -25,52 +26,14 @@ cmo_fl <- snakemake@input$sample_assignments
 # import sce objs + add known cell types
 
 sce <- read_rds(sce_fl)
-raw <- read_rds(raw_fl) # for ambient rna removal step
 
 colData(sce) <- as_tibble(colData(sce),rownames="cell") |>
   column_to_rownames("cell") |>
   DataFrame()
 
-#-------------------------------------------------------------------------------
-# ambient rna removal
-
-# use this to identify blank cells
-cmo <- read_csv(cmo_fl)
-non_empty_cmo <- cmo |> filter(!Assignment %in% c("Blank"))
-
-set.seed(2)
-dcx.sce <- decontX(sce, background=raw[,!raw$Barcode %in% non_empty_cmo$Barcode], seed=12345)
-
-counts(sce) <- round(decontXcounts(dcx.sce))
-
-g_dcx <- celda::plotDecontXContamination(dcx.sce)
-
 # ------------------------------------------------------------------------------
-# refilter empty drops after ambient rna removal
-
-#sum(colSums(counts(sce)) > attr(discard.sum.madlower,"thresholds")[["lower"]])
-#hist(colSums(counts(sce)))
-discard.sum.madlower <- isOutlier(colSums(counts(sce)), type="lower", nmads=0.5, log = F)
-
-
-set.seed(100)
-e.out <- emptyDrops(counts(sce),lower = attr(discard.sum.madlower,"thresholds")[["lower"]])
-
-# <0.0001 == a real cell
-summary(e.out$FDR <= 0.001)
-
-# <0.0001 == a real cell
-metadata(sce)$empty_after_decontx <- e.out |>
-  as_tibble() |>
-  dplyr::count(realcell = FDR <= 0.001) |>
-  filter(!realcell | is.na(realcell)) |>
-  pull(n) |>
-  sum()
-
-sce <- sce[,which(e.out$FDR <= 0.001)]
-
-# ------------------------------------------------------------------------------
-# doublet removal
+# doublet removal - mostly for any heterotypics unable to be removed
+# via cellranger multi
 
 # get logcounts
 sce <- logNormCounts(sce,assay.type="counts")
@@ -99,8 +62,8 @@ sce <- addPerCellQCMetrics(sce,subsets=(list(MT=is.mito,
                                              TE=is.te,
                                              `7SLRNA`=names(sce)[str_detect(names(sce),"7SL")])))
 
-discard.mito.madTop <- isOutlier(sce$subsets_MT_percent, type="higher", nmads=2)
-discard.mito.mad1 <- isOutlier(sce$subsets_MT_percent, type="higher", nmads=1)
+discard.mito.madTop <- isOutlier(sce$subsets_MT_percent, type="higher", nmads=3)
+discard.mito.mad1 <- isOutlier(sce$subsets_MT_percent, type="higher", nmads=2)
 
 g_mito_cuts <- tibble(total.decont.umis = sce$sum,
        mito.percent = sce$subsets_MT_percent) |>
@@ -115,9 +78,6 @@ sce <- sce[,!discard.mito.madTop]
 
 metadata(sce)$n_mito_discarded <- sum(discard.mito.madTop)
 metadata(sce)$n_mito_warning <- sum(sce$mito_warning)
-
-sce_mito_warning <- sce[,sce$mito_warning]
-sce <- sce[,!sce$mito_warning]
 
 # ------------------------------------------------------------------------------
 # remove low dimension cells - very few features expressed, likely another class of dying cells
@@ -164,157 +124,27 @@ metadata(sce)$highly.variable.genes <- chosen
 
 # ------------------------------------------------------------------------------
 # PCA - without influence of mito genes or TEs
-sce <- denoisePCA(sce, dec, subset.row=chosen)
+sce <- fixedPCA(sce, subset.row=chosen)
+
+percent.var <- attr(reducedDim(sce,"PCA"), "percentVar")
+
+chosen.elbow <- findElbowPoint(percent.var)
 
 g_pc_elbow <- tibble(percent.var = attr(reducedDim(sce), "percentVar")) |>
   mutate(PC = row_number()) |>
   ggplot(aes(PC, percent.var)) +
   geom_point() +
-  geom_vline(xintercept = ncol(reducedDim(sce,"PCA")), color="red")
-
+  geom_vline(xintercept = chosen.elbow, color="red")
 
 # ------------------------------------------------------------------------------
 # UMAP
-
 set.seed(2)
 sce <- runUMAP(sce, dimred="PCA")
 set.seed(2)
 sce <- runTSNE(sce, dimred="PCA")
 
-#plotReducedDim(sce, dimred = "UMAP", colour_by = "subsets_MT_percent",text_by = "x")
-
-# ------------------------------------------------------------------------------
-# coarse clustering
-set.seed(20)
-clust.sweep <- clusterSweep(reducedDim(sce, "PCA"), 
-                            NNGraphParam(), 
-                            k=as.integer(c(15, 25, 35, 45, 55, 65, 75, 85)),
-                            cluster.fun=c("louvain", "walktrap", "infomap","leiden"),
-                            BPPARAM=BiocParallel::MulticoreParam(8))
-
-sweep.df <- as_tibble(clust.sweep$parameters,rownames="paramset")
-
-sweep.df <- full_join(sweep.df, enframe(as.list(clust.sweep$clusters),name = "paramset", value = "labels"), by="paramset", relationship="one-to-one")
-
-sweep.df <- sweep.df |>
-  mutate(nclust = map_int(labels, ~length(unique(.x))))
-
-sweep.df <- sweep.df |>
-  mutate(mean.sil.width= map_dbl(labels,~mean(approxSilhouette(reducedDim(sce,"PCA"),.x)$width)))
-
-sweep.df <- sweep.df |>
-  mutate(wcss= map_dbl(labels,~sum(clusterRMSD(reducedDim(sce), .x, sum=TRUE), na.rm=TRUE)))
-
-g_coarse_clustering_sweep <- sweep.df |>
-  dplyr::select(-labels) |>
-  pivot_longer(-c(paramset,k,cluster.fun),names_to = "metric", values_to = "value") |>
-  ggplot(aes(k,value,color=cluster.fun)) +
-  facet_wrap(~metric,scales = "free") +
-  geom_line()
-
-
-set.seed(20)
-nn.clust <- clusterCells(sce, use.dimred="PCA", full=TRUE,
-                         BLUSPARAM=NNGraphParam(cluster.fun="leiden",k =45))
-
-colLabels(sce) <- nn.clust$clusters
-
-#plotReducedDim(sce, dimred = "UMAP", colour_by = "label",text_by = "label") + paletteer::scale_color_paletteer_d("ggsci::default_igv")
-#plotReducedDim(sce, dimred = "UMAP", colour_by = "x",text_by = "x") + paletteer::scale_color_paletteer_d("ggsci::default_igv")
-
-sil.approx <- approxSilhouette(reducedDim(sce, "PCA"), clusters=colLabels(sce)) |>
-  as_tibble(rownames = "Barcode")
-
-sil.approx$closest <- factor(ifelse(sil.approx$width > 0, colLabels(sce), sil.approx$other))
-sil.approx$cluster <- colLabels(sce)
-
-g_silhouette <- ggplot(sil.approx, aes(x=cluster, y=width, colour=closest)) +
-  geom_jitter()
-
-# ------------------------------------------------------------------------------
-# cluster naming 
-# https://cole-trapnell-lab.github.io/garnett/docs_m3/#loading-your-data
-# https://cole-trapnell-lab.github.io/garnett/docs_m3/#installing-garnett
-
-library(monocle3)
-library(garnett)
-library(org.Mm.eg.db)
-mono_cds <- new_cell_data_set(logcounts(sce),cell_metadata = colData(sce),gene_metadata = rowData(sce))
-
-garnett_fl <- "data/green2018_garnett_adult_testis_classifier.txt"
-garnett_fl <- snakemake@input$garnett_fl
-
-marker_check <- check_markers(mono_cds, garnett_fl,
-                              db=org.Mm.eg.db,
-                             cds_gene_id_type = "ENSEMBL",
-                             marker_file_gene_id_type = "SYMBOL")
-
-#plot_markers(marker_check)
-
-set.seed(20)
-threads <- 8
-threads <- snakemake@threads
-garnett_classifier <- train_cell_classifier(cds = mono_cds,cores = threads,
-                                         marker_file = garnett_fl,
-                                         db=org.Mm.eg.db,
-                                         cds_gene_id_type = "ENSEMBL",
-                                         marker_file_gene_id_type = "SYMBOL")
-
-mono_cds <- classify_cells(mono_cds, garnett_classifier,
-                           db = org.Mm.eg.db,
-                           cluster_extend = TRUE,
-                           cds_gene_id_type = "ENSEMBL")
-
-
-stopifnot(all(rownames(colData(mono_cds)) == rownames(colData(sce))))
-
-sce$celltype <- colData(mono_cds)$cluster_ext_type
-
-# ------------------------------------------------------------------------------
-# cluster naming by vote - where some cells in a cluster have garnett labels that
-# disagree with the predominant cluster type
-colData(sce) <- colData(sce) |>
-  as_tibble(rownames="cell") |>
-  filter(celltype!="Unknown") |>
-  dplyr::count(label, celltype) |>
-  filter(!is.na(celltype)) |>
-  group_by(label) |>
-  slice_max(n,n=1,with_ties = F) |>
-  ungroup() |> 
-  dplyr::select(label, celltype) |>
-  left_join(x=as_tibble(colData(sce),rownames="cell"),y=_, by="label", suffix=c('.garnett',"")) |>
-  column_to_rownames("cell") |>
-  DataFrame()
-
-
-sce$label2 <- paste(sce$label,sce$celltype,sep="/")
-
-#plotReducedDim(sce, dimred="TSNE",colour_by="label2", text_by="label2")
-
-# ------------------------------------------------------------------------------
-# subset by variously useful grouping
-#https://www.nature.com/articles/s41467-021-24130-8#:~:text=In%20vivo%2C%20fetal%20TCF21lin,well%20as%20in%20normal%20aging.
-macro_grps <- list(germ_cell = c("Spermatogonia","Spermatocyte","RoundSpermatid","Elongating"),
-                   sertoli="Sertoli",
-                   somatic_non_macro = c("Endothelial","Leydig","Sertoli","Myoid","InnateLymphoid"),
-                   unknown = "Unknown",
-                   macrophage = "Macrophage")
-
-sce_subsets <- map(macro_grps, ~{sce[,sce$macro_celltype %in% .x]})
-  
 # ------------------------------------------------------------------------------
 # export
 write_rds(sce, snakemake@output$rds)
-write_rds(sce_mito_warning, snakemake@output$sce_mito_warning)
-write_rds(g_dcx, snakemake@output$g_dcx)
 write_rds(g_mito_cuts, snakemake@output$g_mito_cuts)
 write_rds(g_pc_elbow, snakemake@output$g_pc_elbow)
-write_rds(g_coarse_clustering_sweep, snakemake@output$g_coarse_clustering_sweep)
-write_rds(nn.clust, snakemake@output$nn_clust)
-write_rds(g_silhouette, snakemake@output$g_silhouette)
-
-
-write_rds(sce_subsets$germ_cell, snakemake@output$sce_germ_cell)
-write_rds(sce_subsets$somatic_non_macro, snakemake@output$sce_somatic_non_macro)
-write_rds(sce_subsets$macrophage, snakemake@output$sce_macrophage)
-write_rds(sce_subsets$sertoli, snakemake@output$sce_sertoli)

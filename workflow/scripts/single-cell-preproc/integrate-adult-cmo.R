@@ -17,17 +17,39 @@ library(org.Mm.eg.db)
 # ------------------------------------------------------------------------------
 # import data 
 # ------------------------------------------------------------------------------
-fls <- Sys.glob("results/single-cell-preproc/preprocessed/adult_96*combined.cellranger.sce.passing_cells.rds")
+fls <- Sys.glob("results/single-cell-preproc/preprocessed/adult_96*.cellranger.sce.passing_cells.rds")
 fls <- snakemake@input$sces
-names(fls) <- str_extract(fls, "adult_\\d+_combined")
+names(fls) <- str_extract(fls, "adult_\\d+_\\d")
 
 sces <- map(fls, read_rds)
+
+bc_lists <- sces |> 
+  map_df(~{
+    makePerCellDF(.x) |>
+      as_tibble() |>
+      dplyr::select(Barcode)
+  },.id="run") |>
+  group_by(run) |>
+  summarise(Barcode = list(Barcode)) |>
+  deframe()
+
+library(ggVennDiagram)
+gg_barcode_overlap <- ggVennDiagram(bc_lists)
+
+
+# rename to be safe
+colnames(sces$adult_9646_2) <- colnames(sces$adult_9646_2) |> str_replace("-1","-2")
+colnames(sces$adult_9682_1) <- colnames(sces$adult_9682_1) |> str_replace("-1","-3")
+colnames(sces$adult_9682_2) <- colnames(sces$adult_9682_2) |> str_replace("-1","-4")
 
 # per email from Devanshi 
 # 9646 wt is cmo 307, 9646 mut is cmo 308
 # 9682 wt is cmo 305, 9682 mut is cmo 306
-sces$adult_9646_combined$genotype <- sces$adult_9646_combined$Assignment |> magrittr::equals("CMO307") |> if_else("WT","MUT")
-sces$adult_9682_combined$genotype <- sces$adult_9682_combined$Assignment |> magrittr::equals("CMO305") |> if_else("WT","MUT")
+sces$adult_9646_1$genotype <- sces$adult_9646_1$Assignment |> magrittr::equals("CMO307") |> if_else("WT","MUT")
+sces$adult_9646_2$genotype <- sces$adult_9646_2$Assignment |> magrittr::equals("CMO307") |> if_else("WT","MUT")
+sces$adult_9682_1$genotype <- sces$adult_9682_1$Assignment |> magrittr::equals("CMO305") |> if_else("WT","MUT")
+sces$adult_9682_2$genotype <- sces$adult_9682_2$Assignment |> magrittr::equals("CMO305") |> if_else("WT","MUT")
+
 
 # ------------------------------------------------------------------------------
 # set up for merging
@@ -38,10 +60,10 @@ sces$adult_9682_combined$genotype <- sces$adult_9682_combined$Assignment |> magr
 # will likely rename sample later, but want to retain batch info
 
 # assign batches based on devanshi's 2/6/24 email titled `Sc RNA seq genotypes`
-sces <- imap(sces, ~{.x$batch <- paste0("batch",str_extract(.y,"(?<=_)\\d+(?=_combined)")); .x})
+sces <- imap(sces, ~{.x$batch <- paste0("batch",str_extract(.y,"\\d{4}_\\d")); .x})
 
 # make sure cell names are unique - original barcodes - <10 shared between batches - are preserved in coldata
-colnames(sces$adult_9646_combined) <- colnames(sces$adult_9646_combined) |> str_replace("-1","-2")
+#colnames(sces$adult_9646_combined) <- colnames(sces$adult_9646_combined) |> str_replace("-1","-2")
 
 # prep for combining
 sces <- map(sces, ~{rowData(.x)$subset <- NULL;.x})
@@ -49,10 +71,15 @@ sces <- map(sces, ~{reducedDims(.x) <- NULL; .x})
 sces <- map(sces, ~{sizeFactors(.x) <- NULL; .x})
 
 # these cols not shared between batches
-sces$adult_9646_combined$CMO307 <- NULL
-sces$adult_9646_combined$CMO308 <- NULL
-sces$adult_9682_combined$CMO305 <- NULL
-sces$adult_9682_combined$CMO306 <- NULL
+sces$adult_9646_1$CMO307 <- NULL
+sces$adult_9646_1$CMO308 <- NULL
+sces$adult_9646_2$CMO307 <- NULL
+sces$adult_9646_2$CMO308 <- NULL
+
+sces$adult_9682_1$CMO305 <- NULL
+sces$adult_9682_1$CMO306 <- NULL
+sces$adult_9682_2$CMO305 <- NULL
+sces$adult_9682_2$CMO306 <- NULL
 
 # make sure all obj have the same genes.
 # because these were quantified via the same pipeline
@@ -64,9 +91,8 @@ sces <- map(sces,~{.x[universe,]})
 # ------------------------------------------------------------------------------
 # check if batch correction needed
 # ------------------------------------------------------------------------------
-
 # combine the sces
-uncorrected0 <- cbind(sces$adult_9646_combined,sces$adult_9682_combined)
+uncorrected0 <- cbind(sces$adult_9646_1,sces$adult_9646_2,sces$adult_9682_1,sces$adult_9682_2)
 metadata(uncorrected0) <- list()
 
 # The normalized counts previously in here wouldn't be useful for between sample comparisons
@@ -76,7 +102,7 @@ uncorrected0 <- multiBatchNorm(uncorrected0, batch = uncorrected0$batch)
 # get hvgs
 decs <- map(sces, modelGeneVar)
 combined.dec <- combineVar(decs)
-hvg.var <- getTopHVGs(combined.dec, n=5000)
+hvg.var <- getTopHVGs(combined.dec, n=10000)
 
 tes <- rowData(uncorrected0)[rowData(uncorrected0)$gene_biotype %in% "repeat_element",] |> rownames()
 hvtes <- hvg.var[hvg.var %in% tes]
@@ -86,35 +112,38 @@ metadata(uncorrected0)$highly.variable.tes <- hvtes
 metadata(uncorrected0)$highly.variable.genes <- chosen
 
 # ------------------------------------------------------------------------------
-# UMAP + TSNE uncorrected - spoiler - def need batch correction
+# UMAP + TSNE uncorrected - we may not actually need batch correction with current
+# preprocesing approach - only TSNE vis seems to have clusters that don't overlap
 # ------------------------------------------------------------------------------
-
+library(PCAtools)
 # PCA - without influence of mito genes or TEs
-uncorrected <- runPCA(uncorrected0, subset_row=chosen, ncomponents=10)
+uncorrected <- runPCA(uncorrected0, subset_row=chosen, ncomponents=50)
+
+percent.var <- attr(reducedDim(uncorrected,"PCA"), "percentVar")
+
+chosen.elbow <- findElbowPoint(percent.var)
 
 g_pc_elbow_uncorrected <- tibble(percent.var = attr(reducedDim(uncorrected), "percentVar")) |>
   mutate(PC = row_number()) |>
   ggplot(aes(PC, percent.var)) +
   geom_point() +
-  geom_vline(xintercept = ncol(reducedDim(uncorrected,"PCA")), color="red")
+  geom_vline(xintercept = chosen.elbow, color="red")
 
 g_pca_uncorrected <- plotPCA(uncorrected, colour_by="batch")
 
+metadata(uncorrected)$pca_elbow <- chosen.elbow
 
 set.seed(2)
-uncorrected <- runUMAP(uncorrected, dimred="PCA",pca=5)
-set.seed(2)
-uncorrected <- runTSNE(uncorrected, dimred="PCA",pca=5)
+uncorrected <- runUMAP(uncorrected, dimred="PCA",pca=chosen.elbow)
 
-g_umap_uncorrected <- plotReducedDim(uncorrected, dimred = "UMAP", colour_by = "batch")
-g_tsne_uncorrected <- plotReducedDim(uncorrected, dimred = "TSNE", colour_by = "batch")
+g_umap_uncorrected <- plotReducedDim(uncorrected, dimred = "UMAP", colour_by = "batch") + facet_wrap(~colour_by)
 
 # ------------------------------------------------------------------------------
 # integration
 # https://bioconductor.org/books/3.17/OSCA.multisample/integrating-datasets.html#mnn-correction
 # "...k... can be interpreted as the minimum anticipated frequency of any shared cell type or state in each batch."
 # ------------------------------------------------------------------------------
-set.seed(1000101001)
+set.seed(2)
 mnn.out <- fastMNN(uncorrected0, k=10,d = 50,
                    batch = uncorrected0$batch, 
                    subset.row=chosen, # no tes involved
@@ -132,28 +161,17 @@ assay(corrected,"reconstructed") <- assay(mnn.out,"reconstructed")
 g_pca_corrected <- plotReducedDim(corrected, dimred = "corrected",colour_by = "batch")
 
 set.seed(2)
-corrected <- runUMAP(corrected, dimred="corrected", pca=5)
-set.seed(2)
-corrected <- runTSNE(corrected, dimred="corrected", pca=5)
+corrected <- runUMAP(corrected, dimred="corrected", pca=chosen.elbow)
 
-g_umap_corrected <- plotReducedDim(corrected, dimred = "UMAP", colour_by = "batch")
-g_tsne_corrected <- plotReducedDim(corrected, dimred = "TSNE", colour_by = "batch")
-
+g_umap_corrected <- plotReducedDim(corrected, dimred = "UMAP", colour_by = "batch") + facet_wrap(~colour_by)
 # ------------------------------------------------------------------------------
 # rerun clustering
 # ------------------------------------------------------------------------------
-
-colData(corrected) <- colData(corrected) |>
-  as_tibble(rownames="ix") |>
-  dplyr::rename_with(.fn=~{paste0("premerge_",.x)}, .cols = c("label","label2","celltype","celltype.garnett")) |>
-  column_to_rownames("ix") |>
-  DataFrame()
-
 set.seed(20)
 clust.sweep <- clusterSweep(reducedDim(corrected, "corrected"), 
                             NNGraphParam(), 
-                            k=as.integer(c(35, 45, 55)),
-                            cluster.fun=c("walktrap", "leiden"))
+                            k=as.integer(c(25,35, 45, 55,65)),
+                            cluster.fun=c("leiden"))
 
 sweep.df <- as_tibble(clust.sweep$parameters,rownames="paramset")
 
@@ -178,11 +196,11 @@ g_coarse_clustering_sweep <- sweep.df |>
 
 set.seed(20)
 nn.clust <- clusterCells(corrected, use.dimred="corrected", full=TRUE,
-                         BLUSPARAM=NNGraphParam(cluster.fun="leiden",k =45))
+                         BLUSPARAM=NNGraphParam(cluster.fun="leiden",k =55))
 
 colLabels(corrected) <- nn.clust$clusters
 
-plotReducedDim(corrected, dimred = "TSNE", colour_by = "label",text_by = "label") + paletteer::scale_color_paletteer_d("ggsci::default_igv")
+#plotReducedDim(corrected, dimred = "UMAP", colour_by = "label",text_by = "label") + paletteer::scale_color_paletteer_d("ggsci::default_igv")
 
 sil.approx <- approxSilhouette(reducedDim(corrected, "corrected"), clusters=colLabels(corrected)) |>
   as_tibble(rownames = "Barcode")
@@ -252,8 +270,12 @@ corrected$label2 <- paste(corrected$label,corrected$celltype,sep="/")
 # sanity checks
 # ------------------------------------------------------------------------------
 
-# plotReducedDim(corrected, dimred="UMAP",colour_by="celltype.garnett", text_by="label") +
-#  facet_wrap(~colour_by)
+plotReducedDim(corrected, dimred="UMAP",
+               colour_by="celltype.garnett", text_by="label2")
+
+plotReducedDim(corrected[,order(logcounts(corrected)["L1MdA_I_5end",])], dimred="UMAP",
+               colour_by="L1MdA_I_5end", text_by="label2",other_fields = "genotype") +
+  facet_wrap(~genotype)
 
 
 # library(bluster)

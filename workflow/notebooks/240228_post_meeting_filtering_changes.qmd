@@ -1,0 +1,35 @@
+---
+title: "Update after February 2024 meeting (filtering adjustment)"
+format: 
+  html:
+    self-contained: true
+editor: visual
+---
+
+```{r setup}
+library(tidyverse)
+library(ggVennDiagram)
+library(scater)
+library(scran)
+library(scuttle)
+
+
+knitr::opts_knit$set(root.dir = here::here())
+```
+
+```{r message=F}
+
+sce <- read_rds(here::here("results/single-cell-preproc/integrated/adult.cellranger.sce.integrated.rds"))
+```
+
+```{r}
+sets2 <- makePerCellDF(sce) |>
+  as_tibble() |>
+  dplyr::select(Sample,Barcode) |>
+  group_by(Sample) |>
+  summarise(Barcode = list(Barcode)) |>
+  deframe()
+
+
+ggVennDiagram(sets2)
+```
