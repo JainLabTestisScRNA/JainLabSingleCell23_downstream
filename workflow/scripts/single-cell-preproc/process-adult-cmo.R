@@ -13,13 +13,8 @@ library(PCAtools)
 # ------------------------------------------------------------------------------
 # files
 
-sce_fl <- "results/single-cell-preproc/multi/import/adult_9682_2.cellranger.sce.rds"
 sce_fl <- snakemake@input$sce
 
-raw_fl <- "results/single-cell-preproc/multi/raw/adult_9682_2.cellranger.sce.rds"
-raw_fl <- snakemake@input$raw
-
-cmo_fl <- "data/cellranger/adult_9682_2/assignment_confidence_table.csv"
 cmo_fl <- snakemake@input$sample_assignments
 
 # ------------------------------------------------------------------------------

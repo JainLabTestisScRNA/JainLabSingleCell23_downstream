@@ -2,25 +2,16 @@ genes: data/genes.gtf.gz
 te_sequences: data/dfam_sequences.fasta
 
 cellranger_matrices:
-  juvenile_13d_wt_null: data/cellranger/juvenile_13d_wt_null/raw_feature_bc_matrix/
   adult_9646_1: data/cellranger/adult_9646_1/raw_feature_bc_matrix/
   adult_9646_2: data/cellranger/adult_9646_2/raw_feature_bc_matrix/
   adult_9682_1: data/cellranger/adult_9682_1/raw_feature_bc_matrix/
   adult_9682_2: data/cellranger/adult_9682_2/raw_feature_bc_matrix/
 
 cellranger_cmo_assignment:
-  juvenile_13d_wt_null: data/cellranger/juvenile_13d_wt_null/assignment_confidence_table.csv
   adult_9646_1: data/cellranger/adult_9646_1/assignment_confidence_table.csv
   adult_9646_2: data/cellranger/adult_9646_2/assignment_confidence_table.csv
   adult_9682_1: data/cellranger/adult_9682_1/assignment_confidence_table.csv
   adult_9682_2: data/cellranger/adult_9682_2/assignment_confidence_table.csv
 
-celltype_assignment:
-  juvenile_13d_wt_null: data/celltype_classification_per_barcode.csv # from umich collabs
-
 garnett_classifier:
-  adult_9646_1: data/green2018_garnett_adult_testis_classifier.txt
-  adult_9646_2: data/green2018_garnett_adult_testis_classifier.txt
-  adult_9682_1: data/green2018_garnett_adult_testis_classifier.txt
-  adult_9682_2: data/green2018_garnett_adult_testis_classifier.txt
-  adult: data/green2018_garnett_adult_testis_classifier.txt
+  broad: data/green2018_garnett_adult_testis_classifier.txt

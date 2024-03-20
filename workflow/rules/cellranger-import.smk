@@ -13,7 +13,7 @@ rule import_cellranger_multi:
         sample_assignments = lambda wc: config.get("cellranger_cmo_assignment").get(wc.experiment),
         genes = config.get("genes"),
     output: 
-        rds = temp("results/single-cell-preproc/multi/import/{experiment}.cellranger.sce.rds"),
-        raw = temp("results/single-cell-preproc/multi/raw/{experiment}.cellranger.sce.rds")
+        rds = "results/cellranger-import/{experiment}.sce.assigned.rds",
+        raw = "results/cellranger-import/{experiment}.sce.raw.rds"
     script: 
         "../scripts/single-cell-preproc/import-cellranger.R"

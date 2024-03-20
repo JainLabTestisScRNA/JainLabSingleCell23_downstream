@@ -54,44 +54,6 @@ stopifnot(length(gene.data) == nrow(sce))
 rowRanges(sce) <- gene.data[rownames(sce)]
 
 # ------------------------------------------------------------------------------
-# naming and merging duplicate rows
-
-# # rename with gene symbol so it's easier to subset and visualize for humans.
-# names(sce) <- sce@rowRanges$gene_name
-# 
-# # this produces features with duplicated names (ie 1 named gene with multiple features) n=~38 total gene names
-# duplicated_names <- rownames(sce)[duplicated(rownames(sce))] |> unique() |> set_names()
-# 
-# # the integer ixs of the duplicates
-# duplicated_ix <- duplicated_names |>
-#   map(~{which(rownames(sce) == .x)})
-# 
-# # sce with non duplicated gene names
-# non_duplicated_sce <- sce[!rownames(sce) %in% duplicated_names,]
-# 
-# # generate the sce subset for duplicated gene names. we arbitrarily take the
-# # first range for each duplicated gene.s
-# merged_matrix <- sumCountsAcrossFeatures(sce, ids=duplicated_ix)
-# merged_rngs <-  map(duplicated_ix, ~{rowRanges(sce)[.x[1]]}) |> GRangesList() |> unlist()
-# names(merged_rngs) <- merged_rngs$gene_name
-# 
-# # expectation checks
-# stopifnot(all(rownames(merged_matrix) == names(merged_rngs)))
-# stopifnot(all(colnames(merged_matrix) == colnames(sce)))
-# 
-# # make new sce with the merged features - 1 row/rng for each duplicated gene name
-# merged_sce <- SingleCellExperiment(assays=list(counts=merged_matrix),
-#                                    rowRanges = merged_rngs, 
-#                                    colData=colData(sce))
-# 
-# 
-# sce <- rbind(non_duplicated_sce, merged_sce) |> sort()
-# 
-# 
-# 
-# stopifnot(anyDuplicated(rownames(sce2))==0)
-
-# ------------------------------------------------------------------------------
 # add sample data
 
 cmo <- read_csv(cmo_fl)
