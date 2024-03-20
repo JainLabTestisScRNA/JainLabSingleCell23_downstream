@@ -6,30 +6,182 @@ format:
 editor: visual
 ---
 
-```{r setup}
+Adult data processed with commit 73b7a4d. Major changes relate to treatment of each fastq as a separate batch rather than sequencing replicates, simplified preprocessing that retains slightly more cells to be in line with Hammoud lab lab mito cutoffs.
+
+```{r setup, message=F}
 library(tidyverse)
 library(ggVennDiagram)
 library(scater)
 library(scran)
 library(scuttle)
-
+library(slingshot)
+library(patchwork)
 
 knitr::opts_knit$set(root.dir = here::here())
 ```
 
 ```{r message=F}
-
 sce <- read_rds(here::here("results/single-cell-preproc/integrated/adult.cellranger.sce.integrated.rds"))
+
+celldf <- makePerCellDF(sce)
+
+germ_cell_types <- c("Spermatogonia","Spermatocyte","RoundSpermatid","Elongating")
 ```
+
+## Confirmation that each batch represents distinct pool of cells
+
+After receiving updated information about the experiment design, I looked at overlap of cell barcodes within each batch to confirm that each batch represents a distinct pool of cells (ie batch9646_1 and batch9646_2 are not the same library resequenced).
 
 ```{r}
 sets2 <- makePerCellDF(sce) |>
   as_tibble() |>
-  dplyr::select(Sample,Barcode) |>
-  group_by(Sample) |>
+  dplyr::select(batch,Barcode) |>
+  group_by(batch) |>
   summarise(Barcode = list(Barcode)) |>
   deframe()
 
 
-ggVennDiagram(sets2)
+ggVennDiagram(sets2) + labs(title="barcode overlap among batches") + theme(plot.title=element_text(hjust=0.5,face="bold"))
+```
+
+## Total cells
+
+```{r}
+celldf |>
+  ggplot(aes(batch,fill=genotype)) +
+  geom_bar(position="dodge") +
+  stat_count(geom = "text", size = 3.5,
+aes(label =after_stat(count),y=..count..+100),position=position_dodge(1)) +
+  scale_fill_grey()
+```
+
+## Overview of cell types
+
+I haven't put a ton of effort in into 'tuning' the UMAP parameters yet, so I wouldn't overinterpret the precise locations of each cluster relative to each other. Also note that initial cell type calls (via garnett using Green 2018 markers) result in some clusters that are mosaics of celltype calls and/or have many cells with uncallable cell types. For this plot, all cells in each cluster are assigned to the cell type predominantly represented in each cluster. When we get expert cell type annotations from Hammoud lab we can look at concordance between their annotations and our programmatic calls and adjust clustering if any discrepancies come up.
+
+```{r}
+plotReducedDim(sce,dimred = "UMAP",colour_by="celltype",text_by="label2", text_size=rel(3))
+```
+
+Same plot as above, but split by genotype. As expected, MUT cells are depleted for elongating spermatids and to a lesser extent round spermatids.
+
+```{r}
+plotReducedDim(sce,dimred = "UMAP",colour_by="celltype",text_by="label2",other_fields = "genotype",text_size=rel(3)) +
+  facet_wrap(~genotype)
+```
+
+```{r}
+celldf |>
+  ggplot(aes(celltype,fill=genotype)) +
+  geom_bar(position="dodge") +
+  facet_wrap(~batch) +
+    stat_count(geom = "text", 
+aes(label =..count..,y=..count..+100),position=position_dodge(1),size=rel(2)) +
+  scale_fill_grey() +
+  theme(axis.text.x=element_text(angle=45, hjust=1))
+```
+
+## Differential expression
+
+This analysis compares MUT/WT within each cluster using pseudobulk values via edgeR.
+
+```{r message=F}
+de <- read_tsv(here::here("results/differential_expression/adult.tbl.pseudobulk.de.tsv.gz"))
+
+de.germ <- de |> 
+  filter(celltype %in% germ_cell_types) |>
+  mutate(feat.type = if_else(str_detect(feature,"ENSMUSG"),"gene","TE"))
+```
+
+Plot below shows fold change versus count for all expressed features in each cell type specified by the label above each plot. TEs are highlighted in red, significantly DE TEs (FDR\<0.05) are highlighted with black circles.
+
+```{r, fig.height=7, fig.width=5}
+de.germ |>
+  arrange(-str_detect(feature,"ENSMUSG")) |>
+ggplot(aes(logCPM,logFC,color=feat.type)) +
+  geom_point(size=rel(0.5)) +
+  geom_point(data=\(x)filter(x,feat.type=="TE"&FDR <0.05),size=rel(2),shape=21,color="black",fill=NA) +
+  facet_wrap(~celltype,ncol=1) +
+  geom_hline(yintercept=0,linetype="dotted") +
+  theme(aspect.ratio = 0.5) +
+  scale_color_manual(values = c(gene="gray","TE"="red")) +
+  ylab("logFC (MUT/WT)")
+```
+
+```{r}
+de.germ |>
+  filter(celltype=="Spermatocyte" & feat.type=="TE" & FDR<0.05) |>
+  arrange(logFC,PValue*sign(logFC)) |>
+  mutate(rnk=row_number()) |>
+  mutate(color=if_else(str_detect(feature,"^L1"),"red","grey")) |>
+  mutate(feature=fct_reorder(feature,rnk)) |>
+  ggplot(aes(feature,logFC,fill=color)) +
+  geom_col() +
+  theme(axis.text.x = element_text(hjust=1,angle=90, vjust = 0.5)) +
+  scale_fill_identity() +
+  ylab("logFC (MUT/WT)")
+```
+
+## Germline pseudotime
+
+The plot below shows the direction of the trajectory we identifed, split by genotype.
+
+```{r}
+germ_sce <- read_rds(here::here("results/trajectory/adult.cellranger.sce.germ_cell.trajectory.rds"))
+germ_sce_exportable <- germ_sce
+germ_sce_exportable$slingshot <- NULL
+
+embedded <- embedCurves(germ_sce, "UMAP")
+embedded <- slingCurves(embedded)[[1]] # only 1 path.
+embedded <- data.frame(embedded$s[embedded$ord,])
+
+get_ps_umap <- \(x) plotUMAP(x, colour_by="celltype") +
+  geom_path(data=embedded[seq(nrow(embedded)-300),], aes(x=Dim.1, y=Dim.2), size=1.2, arrow = arrow(length=unit(0.30,"cm"), ends="last", type = "closed")) +
+  labs(title=unique(x$genotype))
+
+get_ps_umap(germ_sce[,germ_sce$genotype==c("WT")]) +
+get_ps_umap(germ_sce[,germ_sce$genotype==c("MUT")])
+```
+
+L1MdA_I_5end expression in the germ cell trajectory is shown below. As suggested above, this appears to be driven largely by cells from a single mouse (the mutant in sequencing sequencing batch 9682).
+
+```{r fig.height=10,fig.width=5}
+get_ps_umap <- \(x) plotReducedDim(x[,order(logcounts(x)["L1MdA_I_5end",])],colour_by = "L1MdA_I_5end",dimred="UMAP",other_fields = c("genotype","batch")) +
+  geom_path(data=embedded[seq(nrow(embedded)-300),], aes(x=Dim.1, y=Dim.2), size=1.2, arrow = arrow(length=unit(0.30,"cm"), ends="last", type = "closed"))
+
+get_ps_umap(germ_sce) + facet_wrap(~batch+genotype,ncol = 2)
+```
+
+This is confirmed by looking at pseudobulk CPM derived from spermatocytes grouped by genotype and sequencing batch.
+
+```{r}
+sce_pseudo <- read_rds(here::here("results/differential_expression/adult.sce.pseudobulk.rds"))
+
+cpm_ps_df <- edgeR::cpm(sce_pseudo) |> 
+  magrittr::set_colnames(paste(sce_pseudo$genotype,sce_pseudo$celltype,sce_pseudo$batch,sep="__")) |>
+  as_tibble(rownames = "feature") |>
+  pivot_longer(-feature, values_to = "cpm",names_to = "group") |>
+  separate(group,c("genotype","celltype","batch"),sep="__")
+
+cpm_ps_df |>
+  filter(celltype=="Spermatocyte" & feature == "L1MdA_I_5end") |>
+  ggplot(aes(genotype,cpm,color=batch)) +
+  geom_jitter(width=0.2,size=rel(4)) +
+  xlab("counts per million") +
+  labs(title = "Spermatocyte pseudobulk expression")
+
+```
+
+If we look at the proportion of UMIs that are derived from TEs, we can see that in general batch 9682_1 and 9682_2 have significantly higher overall TE content in multiple celltypes, independent of genotype.
+
+```{r fig.height=15, fig.width=10}
+celldf |>
+  ggplot(aes(batch,subsets_TE_percent,fill=batch)) +
+  geom_boxplot() +
+  facet_wrap(~celltype+ genotype,ncol=2) +
+  theme(axis.text.x = element_text(angle=45, hjust = 1),text = element_text(size=25))
+```
+
+```{r}
+sessionInfo()
 ```

@@ -9,8 +9,10 @@ sce_fl <- "results/single-cell-preproc/integrated/adult.cellranger.sce.integrate
 sce_fl <- snakemake@input$sce
 sce <- read_rds(sce_fl)
 
+sce$litter <- sce$batch |> str_remove("_\\d$")
+
 summed <- aggregateAcrossCells(sce, 
-                               id=colData(sce)[,c("batch","genotype","celltype")])
+                               id=colData(sce)[,c("litter","batch","genotype","celltype")])
 
 summed$genotype <- summed$genotype |> factor() |> relevel(ref = "WT")
 

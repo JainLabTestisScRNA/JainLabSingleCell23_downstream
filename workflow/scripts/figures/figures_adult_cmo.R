@@ -5,7 +5,6 @@ library(tidyverse)
 library(patchwork)
 library(slingshot)
 
-
 de <- read_tsv("results/differential_expression/adult.tbl.pseudobulk.de.tsv.gz")
 
 filter(de,!str_detect(feature,"ENSMUSG") & FDR < 0.05) |>
