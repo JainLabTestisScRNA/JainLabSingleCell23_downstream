@@ -9,17 +9,15 @@ library(DropletUtils)
 # ------------------------------------------------------------------------------
 # organize input files
 
-# read the main dataset we'll use
-# this is two filtered matrices in h5 format
-# for consistency with the unfiltered matrix, I'll remove the 1_/2_ prefix
-fl <- "data/cellranger/custom/raw_feature_bc_matrix/"
+# read the main dataset we'll use (unfiltered)
+fl <- "data/cellranger/adult_9646_1/raw_feature_bc_matrix/"
 fl <-  snakemake@input$mat
 
 genes_fl <- "data/genes.gtf.gz"
 genes_fl <- snakemake@input$genes
 
 # sample calls from cellranger multi pipeline
-cmo_fl <- "data/cellranger/custom/assignment_confidence_table.csv"
+cmo_fl <- "data/cellranger/adult_9646_1/assignment_confidence_table.csv"
 cmo_fl <- snakemake@input$sample_assignments
 
 # ------------------------------------------------------------------------------
@@ -71,11 +69,21 @@ colData(sce) <- newcoldata
 sce$Sample <- sce$Assignment
 
 # ------------------------------------------------------------------------------
-# export
+# get raw and filtered objects
 
 sce_raw <- sce
 
+# get umi ranks for filtering empty cells
+barcodeRanks(sce_raw) -> bcrank
+
+# filter based on assignment to sample
 sce <- sce[,!is.na(sce$Sample) & !sce$Sample %in% c("Blank","Multiplet","Unassigned")]
+
+# filter based on knee plot of all cells
+sce <- sce[,colSums(counts(sce)) > metadata(bcrank)$knee]
+
+# ------------------------------------------------------------------------------
+# export
 
 saveRDS(sce, snakemake@output$rds)
 saveRDS(sce_raw, snakemake@output$raw)

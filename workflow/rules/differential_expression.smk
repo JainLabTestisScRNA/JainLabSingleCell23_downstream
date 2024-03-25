@@ -1,6 +1,6 @@
 rule adult_cmo_de:
     input:
-        sce = rules.integrate_adult_cmo.output.rds
+        sce = rules.find_celltypes_adult_cmo.output.rds
     output:
         pseudobulk = "results/differential_expression/adult.sce.pseudobulk.rds",
         tsv = "results/differential_expression/adult.tbl.pseudobulk.de.tsv.gz",

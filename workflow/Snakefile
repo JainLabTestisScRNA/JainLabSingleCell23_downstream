@@ -8,7 +8,7 @@ include: "rules/cellranger-import.smk"
 include: "rules/single-cell-preproc.smk"
 include: "rules/subsets.smk"
 include: "rules/plots.smk"
-#include: "rules/differential_expression.smk"
+include: "rules/differential_expression.smk"
 
 rule all:
     input:
@@ -18,12 +18,7 @@ rule all:
         "results/integration/adult.sce.integrated.clustered.rds",
         "results/integration/adult.sce.integrated.clustered.celltypes.rds",
         "results/subsets/adult.sce.integrated.clustered.celltypes.germ_cell.rds",
-        #expand("results/single-cell-preproc/preprocessed/{x}.cellranger.sce.passing_cells.rds",x=config.get("cellranger_matrices")),
-        #"results/single-cell-preproc/integrated/adult.cellranger.sce.integrated.rds",
-
-
-        # ## adult de
-        #"results/differential_expression/adult.tbl.pseudobulk.de.tsv.gz",
+        "results/differential_expression/adult.tbl.pseudobulk.de.tsv.gz",
 
         # plots
         rules.plot_germ_and_somatic_pca.output,

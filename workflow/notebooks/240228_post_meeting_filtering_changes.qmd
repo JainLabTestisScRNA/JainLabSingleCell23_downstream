@@ -21,7 +21,7 @@ knitr::opts_knit$set(root.dir = here::here())
 ```
 
 ```{r message=F}
-sce <- read_rds(here::here("results/single-cell-preproc/integrated/adult.cellranger.sce.integrated.rds"))
+sce <- read_rds(here::here("results/integration/adult.sce.integrated.clustered.celltypes.rds"))
 
 celldf <- makePerCellDF(sce)
 
@@ -126,7 +126,8 @@ de.germ |>
 
 The plot below shows the direction of the trajectory we identifed, split by genotype.
 
-```{r}
+```{r eval=F}
+# not evaluated after cleaning up some unused analysis (ie trajectory)
 germ_sce <- read_rds(here::here("results/trajectory/adult.cellranger.sce.germ_cell.trajectory.rds"))
 germ_sce_exportable <- germ_sce
 germ_sce_exportable$slingshot <- NULL
@@ -145,7 +146,7 @@ get_ps_umap(germ_sce[,germ_sce$genotype==c("MUT")])
 
 L1MdA_I_5end expression in the germ cell trajectory is shown below. As suggested above, this appears to be driven largely by cells from a single mouse (the mutant in sequencing sequencing batch 9682).
 
-```{r fig.height=10,fig.width=5}
+```{r fig.height=10,fig.width=5, eval=F}
 get_ps_umap <- \(x) plotReducedDim(x[,order(logcounts(x)["L1MdA_I_5end",])],colour_by = "L1MdA_I_5end",dimred="UMAP",other_fields = c("genotype","batch")) +
   geom_path(data=embedded[seq(nrow(embedded)-300),], aes(x=Dim.1, y=Dim.2), size=1.2, arrow = arrow(length=unit(0.30,"cm"), ends="last", type = "closed"))
 
