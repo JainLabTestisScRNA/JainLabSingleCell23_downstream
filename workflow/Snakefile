@@ -6,7 +6,7 @@ wildcard_constraints:
 
 include: "rules/cellranger-import.smk"
 include: "rules/single-cell-preproc.smk"
-include: "rules/subsets.smk"
+include: "rules/germ_cells.smk"
 include: "rules/plots.smk"
 include: "rules/differential_expression.smk"
 
