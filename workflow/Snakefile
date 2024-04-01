@@ -17,8 +17,10 @@ rule all:
         "results/integration/adult.sce.integrated.rds",
         "results/integration/adult.sce.integrated.clustered.rds",
         "results/integration/adult.sce.integrated.clustered.celltypes.rds",
-        "results/subsets/adult.sce.integrated.clustered.celltypes.germ_cell.rds",
+        "results/germ_cells/adult.sce.integrated.clustered.celltypes.germ_cell.rds",
+        "results/germ_cells/adult.sce.integrated.clustered.celltypes.germ_cell.reprocessed.rds",
         "results/differential_expression/adult.tbl.pseudobulk.de.tsv.gz",
 
         # plots
         rules.plot_germ_and_somatic_pca.output,
+        'results/plots/cluster_label_correlation_matrices/cluster_label_correlation_matrix.jain_vs_green2018.pdf',

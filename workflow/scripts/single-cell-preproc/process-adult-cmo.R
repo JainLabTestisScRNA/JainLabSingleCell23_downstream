@@ -13,8 +13,10 @@ library(PCAtools)
 # ------------------------------------------------------------------------------
 # files
 
+sce_fl <- "results/cellranger-import/adult_9646_1.sce.assigned.rds"
 sce_fl <- snakemake@input$sce
 
+cmo_fl <- "data/cellranger/adult_9646_1/assignment_confidence_table.csv"
 cmo_fl <- snakemake@input$sample_assignments
 
 # ------------------------------------------------------------------------------
@@ -80,7 +82,7 @@ metadata(sce)$n_mito_warning <- sum(sce$mito_warning)
 
 sce$nexprs <- nexprs(sce) 
 
-discard.nexpres.madlower <- isOutlier(sce$nexprs, type="lower", nmads=1)
+discard.nexpres.madlower <- isOutlier(sce$nexprs, type="lower", nmads=3,log = T)
 
 sce <- sce[,!discard.nexpres.madlower]
 
