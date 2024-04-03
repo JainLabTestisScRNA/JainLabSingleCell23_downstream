@@ -5,21 +5,21 @@ library(scuttle)
 library(edgeR)
 
 
-sce_fl <- "results/integration/adult.sce.integrated.clustered.celltypes.rds"
+sce_fl <- "results/germ_cells/adult.sce.integrated.clustered.celltypes.germ_cell.reprocessed.rds"
 sce_fl <- snakemake@input$sce
 sce <- read_rds(sce_fl)
 
 sce$seqrun <- sce$batch |> str_remove("_\\d$")
 
 summed <- aggregateAcrossCells(sce, 
-                               id=colData(sce)[,c("seqrun","batch","genotype","celltype")])
+                               id=colData(sce)[,c("seqrun","batch","genotype","label")])
 
 summed$genotype <- summed$genotype |> factor() |> relevel(ref = "WT")
 
 summed.filt <- summed[,summed$ncells >= 5]
 
 de.results <- pseudoBulkDGE(summed.filt, 
-                            label=summed.filt$celltype,
+                            label=summed.filt$label,
                             design=~batch + genotype,
                             coef="genotypeMUT",
                             condition=summed.filt$genotype ,
