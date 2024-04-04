@@ -7,6 +7,15 @@ rule plot_barcode_overlap:
     script:
         "../scripts/plots/barcode_overlap.R"
 
+rule plot_check_normalization:
+    input:
+        sce = rules.find_celltypes_adult_cmo.output.rds,
+    output:
+        tsv = 'results/plots/check_normalization/check_normalization.tsv.gz',
+        pdf = 'results/plots/check_normalization/check_normalization.pdf'
+    script:
+        "../scripts/plots/check_normalization.R"
+
 rule plot_genotype_facetted_umap:
     input:
         sce = rules.find_celltypes_adult_cmo.output.rds,
@@ -158,3 +167,30 @@ rule plot_germ_cell_mut_vs_wt_volcano_and_ma:
         tsv = 'results/plots/germ_cell_mut_vs_wt_volcanos_and_ma/germ_cell_mut_vs_wt_volcano.tsv.gz'
     script:
         "../scripts/plots/germ_cell_mut_vs_wt_volcano_and_ma.R"
+
+
+rule plot_per_cell_per_sample_de_jitter_broad:
+    input:
+        sce = rules.find_celltypes_adult_cmo.output.rds,
+        de = rules.adult_cmo_de.output.tsv,
+        classifications = config.get("dfam_te_classifications"),
+    output:
+        pdf = 'results/plots/per_cell_per_sample_jitter/per_cell_per_sample_de_jitter.broad.pdf',
+        tsv = 'results/plots/per_cell_per_sample_jitter/per_cell_per_sample_de_jitter.broad.tsv.gz'
+    params:
+        de_by = 'celltype',
+    script:
+        "../scripts/plots/per_cell_per_sample_de_jitter.R"
+
+rule plot_per_cell_per_sample_de_jitter_germ_cells:
+    input:
+        sce = rules.reprocess_adult_germ_cells.output.rds,
+        de = rules.adult_cmo_germ_cell_de.output.tsv,
+        classifications = config.get("dfam_te_classifications"),
+    output:
+        pdf = 'results/plots/per_cell_per_sample_jitter/per_cell_per_sample_de_jitter.germ_cells.pdf',
+        tsv = 'results/plots/per_cell_per_sample_jitter/per_cell_per_sample_de_jitter.germ_cells.tsv.gz'
+    params:
+        de_by = 'label',
+    script:
+        "../scripts/plots/per_cell_per_sample_de_jitter.R"

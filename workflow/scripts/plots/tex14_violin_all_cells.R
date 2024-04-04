@@ -3,6 +3,8 @@ library(scater)
 library(scran)
 library(scuttle)
 
+theme_set(theme_classic())
+
 fl <- ifelse(exists("snakemake"),snakemake@input$sce,"results/integration/adult.sce.integrated.clustered.celltypes.rds")
 
 sce <- read_rds(fl)

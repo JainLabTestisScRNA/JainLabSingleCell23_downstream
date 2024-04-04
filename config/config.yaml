@@ -15,3 +15,6 @@ cellranger_cmo_assignment:
 
 garnett_classifier:
   broad: data/green2018_garnett_adult_testis_classifier.txt
+
+
+dfam_te_classifications: data/dfam_classification.parsed.txt

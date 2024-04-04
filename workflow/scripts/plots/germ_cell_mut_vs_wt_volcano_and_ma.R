@@ -1,5 +1,7 @@
 library(tidyverse)
 
+theme_set(theme_classic())
+
 fl <- ifelse(exists("snakemake"),
              snakemake@input$tsv,
              "results/differential_expression/adult.tbl.germ_cell.reprocessed.de.tsv.gz")
@@ -33,17 +35,23 @@ split(de,de$celltype) |>
   
 dev.off()
 
+plot_volc <-  function(x) {
+    arrange(x,-str_detect(feature,"ENSMUSG")) |>
+    ggplot(aes(logFC,-log10(FDR),color=feat.type)) +
+    geom_point(size=rel(0.5)) +
+    geom_point(data=\(x)filter(x,feat.type=="TE"&FDR <0.05),size=rel(2),shape=21,color="black",fill=NA) +
+    facet_wrap(~celltype,ncol=1) +
+    geom_hline(yintercept=-log10(0.05),linetype="dotted") +
+    theme(aspect.ratio = 0.5) +
+    scale_color_manual(values = c(gene="gray","TE"="red")) +
+    xlab("logFC (MUT/WT)")
+}
+
 pdf(snakemake@output$volcano)
-de |>
-  arrange(-str_detect(feature,"ENSMUSG")) |>
-  ggplot(aes(logFC,-log10(FDR),color=feat.type)) +
-  geom_point(size=rel(0.5)) +
-  geom_point(data=\(x)filter(x,feat.type=="TE"&FDR <0.05),size=rel(2),shape=21,color="black",fill=NA) +
-  facet_wrap(~celltype,ncol=1) +
-  geom_hline(yintercept=-log10(0.05),linetype="dotted") +
-  theme(aspect.ratio = 0.5) +
-  scale_color_manual(values = c(gene="gray","TE"="red")) +
-  xlab("logFC (MUT/WT)")
+
+split(de,de$celltype) |>
+  map(plot_volc)
+
 dev.off()
 
 write_tsv(de,snakemake@output$tsv)

@@ -4,6 +4,8 @@ library(scuttle)
 library(tidyverse)
 library(corrr)
 
+theme_set(theme_classic())
+
 fl <- ifelse(exists("snakemake"),snakemake@input$sce,"results/germ_cells/adult.sce.integrated.clustered.celltypes.germ_cell.reprocessed.rds")
 sce <- read_rds(fl)
 

@@ -1,5 +1,7 @@
 library(tidyverse)
 
+theme_set(theme_classic())
+
 germ_cell_types <- c("Spermatogonia","Spermatocyte","RoundSpermatid","Elongating")
 
 fl <- ifelse(exists("snakemake"),
