@@ -9,6 +9,9 @@ theme_set(theme_classic())
 fl <- ifelse(exists("snakemake"),snakemake@input$sce,"results/germ_cells/adult.sce.integrated.clustered.celltypes.germ_cell.reprocessed.rds")
 sce <- read_rds(fl)
 
+
+goi <- readxl::read_xlsx("data/green2018_supp3.xlsx",skip = 5) |> pull(gene)
+
 # ------------------------------------------------------------------------------
 # create pseudobulk for labels, not considering genotype
 pse <- aggregateAcrossCells(sce,sce$label)
@@ -20,6 +23,7 @@ gc12_mat <- readxl::read_xlsx("data/GSE112393_MergedAdultMouseST25_12GermCellClu
   dplyr::rename(gene_name ="Cluster") |>
   filter(!row_number() %in% c(1,2)) |>
   inner_join(as_tibble(makePerFeatureDF(pse)[,c("gene_id","gene_name")])) |>
+  filter(gene_name %in% goi) |>
   dplyr::select(-gene_name) |>
   dplyr::relocate(gene_id)
 
@@ -72,7 +76,7 @@ dev.off()
 
 # pseudobulk for genotype/label combos
 pse <- aggregateAcrossCells(sce,paste(sce$label,sce$genotype,sep="_"))
-pse <- computeSumFactors(pse)
+pse <- computeLibraryFactors(pse)
 pse <- logNormCounts(pse)
 
 c_df <- logcounts(pse) |> as_tibble(rownames="gene_id") |>
@@ -82,7 +86,7 @@ write_tsv(c_df,snakemake@output$genotype)
 
 # standardize the colors for these plots
 palette_len <- 10
-colors <- colorRampPalette( c("white","red"))(palette_len)
+colors <- colorRampPalette( c("blue","white","red"))(palette_len)
 #colors <- viridis::viridis(palette_len,direction = 1,begin = 1,end=0.1)
 
 breaks <- seq(min(c_df[,-1]), max(c_df[-1]), length.out =palette_len)

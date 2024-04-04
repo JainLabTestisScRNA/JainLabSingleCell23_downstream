@@ -14,7 +14,7 @@ x <- makePerCellDF(sce) |>
 
 
 g <- ggplot(x,aes(label,fill=genotype)) +
-  geom_bar()
+  geom_bar(position="fill")
 
 # put x axis into the correct order
 labs <- sce$label |> unique() 
