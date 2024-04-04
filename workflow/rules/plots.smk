@@ -194,3 +194,17 @@ rule plot_per_cell_per_sample_de_jitter_germ_cells:
         de_by = 'label',
     script:
         "../scripts/plots/per_cell_per_sample_de_jitter.R"
+
+rule plot_de_te_heatmap_broad:
+    input:
+        de = rules.adult_cmo_de.output.tsv,
+        sce = rules.find_celltypes_adult_cmo.output.rds,
+        classifications = config.get("dfam_te_classifications"),
+    output:
+        pdf = 'results/plots/de_te_heatmap/de_te_heatmap.broad.pdf',
+        pdf_foldchange = 'results/plots/de_te_heatmap/de_te_heatmap.broad_foldchange.pdf',
+        tsv = 'results/plots/de_te_heatmap/de_te_heatmap.broad_foldchange.tsv.gz'
+    params:
+        de_by = 'celltype',
+    script:
+        "../scripts/plots/de_te_heatmap_broad.R"

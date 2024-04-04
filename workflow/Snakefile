@@ -42,3 +42,4 @@ rule all:
         rules.plot_check_normalization.output,
         rules.plot_per_cell_per_sample_de_jitter_broad.output,
         rules.plot_per_cell_per_sample_de_jitter_germ_cells.output,
+        rules.plot_de_te_heatmap_broad.output,
