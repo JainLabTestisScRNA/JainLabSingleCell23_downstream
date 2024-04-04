@@ -28,3 +28,8 @@ This is then parsed with `workflow/scripts/resource_prep/parse_te_classification
 
 green2018_supp{2,3}.xlsx from that manuscript's supplementary data.
 GSE112393_MergedAdultMouseST25_12GermCellClusters_AllGeneExp.xlsx from GEO accession page processed data section.
+
+
+## Classifiers based on Green et al. data
+
+See `workflow/scripts/resource_prep`.
