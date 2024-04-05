@@ -6,7 +6,7 @@ library(scuttle)
 library(bluster)
 library(PCAtools)
 
-sce_fl <- "results/germ_cells/adult.sce.integrated.clustered.celltypes.germ_cell.rds"
+sce_fl <- "results/germ_cells/adult.sce.integrated.clustered.celltypes.germ_cell.wt.rds"
 sce_fl <-  snakemake@input$sce
 sce <- read_rds(sce_fl)
 assay(sce,"reconstructed") <- NULL
@@ -57,18 +57,18 @@ assay(sce,"reconstructed") <- assay(mnn.out,"reconstructed")
 # recluster, shooting for ~12 clusts
 # want to be able to easily sanity check against Green et al. 2018
 
-colLabels(sce) <- sce$celltype
-
 set.seed(2)
 nn.clust <- clusterCells(sce,use.dimred = "corrected", full=F,
-                         BLUSPARAM=SNNGraphParam(k =48,type = "jaccard",cluster.fun = "louvain"))
+                         BLUSPARAM=SNNGraphParam(k = 48,type = "jaccard",cluster.fun = "louvain"))
 
 colLabels(sce) <- nn.clust |> as.character()
 
-plotReducedDim(sce[,order(sce$label)], dimred = "corrected", ncomponents = c(1,3),
-              swap_rownames = "gene_name",other_fields = "genotype",
-               colour_by = "label",
+
+plotReducedDim(sce[,order(sce$label)], dimred = "corrected", ncomponents = c(1,2),
+               swap_rownames = "gene_name",other_fields = "genotype",
+               colour_by = "celltype",
                text_by = "label") #+ facet_wrap(~genotype)
+
 # ------------------------------------------------------------------------------
 # call cell types again, but based on Green 2018's 12 GC clusts
 # https://cole-trapnell-lab.github.io/garnett/docs_m3/#loading-your-data
@@ -119,7 +119,7 @@ plotReducedDim(sce[,order(sce$label)], dimred = "corrected", ncomponents = c(1,3
 #sce$celltype <- colData(mono_cds)$cluster_ext_type
 
 
-order_df <- tibble(label=(as.character(c(8,2,1,14,9,13,10,7,11,12,5,4,3,6)))) |>
+order_df <- tibble(label=(as.character(c(13,8,9,7,11,6,5,10,4,2,3,1,12)))) |>
   mutate(ordered_label = paste0("cl",row_number()))
 
 colData(sce) <- colData(sce) |> as_tibble(rownames="cell") |>
@@ -127,7 +127,7 @@ colData(sce) <- colData(sce) |> as_tibble(rownames="cell") |>
   column_to_rownames("cell") |>
   DataFrame()
 
-plotReducedDim(sce,"corrected",ncomponents = c(1,3),colour_by = "ordered_label",text_by = "ordered_label")
+plotReducedDim(sce,"corrected",ncomponents = c(1,2),colour_by = "ordered_label",text_by = "ordered_label")
 sce$clustering_label = sce$label
 sce$label <- sce$ordered_label
 

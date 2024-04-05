@@ -66,6 +66,21 @@ rule plot_cluster_label_correlation_matrices:
     script:
         "../scripts/plots/cluster_label_correlation_matrices.R"
 
+
+rule plot_cluster_label_correlation_matrices_wt_mut:
+    input:
+        mut = rules.reprocess_adult_germ_cells_mut.output.rds,
+        wt = rules.reprocess_adult_germ_cells_wt.output.rds,
+    output:
+        wt_vs_green2018 = 'results/plots/cluster_label_correlation_matrices_wt_mut/cluster_label_correlation_matrix.wt_vs_green2018.pdf',
+        mut_vs_green2018 = 'results/plots/cluster_label_correlation_matrices_wt_mut/cluster_label_correlation_matrix.mut_vs_green2018.pdf',
+        mat = 'results/plots/cluster_label_correlation_matrices_wt_mut/cluster_label_correlation_matrix.tsv.gz',
+        mut_vs_wt = 'results/plots/cluster_label_correlation_matrices_wt_mut/cluster_label_correlation_matrix.mut_vs_wt.pdf',
+    params:
+        odir = 'results/plots/cluster_label_correlation_matrices_wt_mut'
+    script:
+        "../scripts/plots/cluster_label_correlation_matrices_wt_mut.R"
+
 rule plot_overall_marker_genes:
     input:
         sce = rules.find_celltypes_adult_cmo.output.rds,

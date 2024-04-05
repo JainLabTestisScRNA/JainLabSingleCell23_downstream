@@ -63,7 +63,6 @@ pdf(snakemake@output$jain_vs_jain)
 c_df |>
   filter(str_detect(term,"cl")) |>
   dplyr::select(c(term,contains("cl"))) |>
-  dplyr::select(term,cl1,cl2,cl3,cl4,cl5,cl6,cl7,cl8,cl9,cl10,cl11,cl12) |>
   mutate(term = fct_reorder(term,as.integer(str_extract(term,"\\d+")))) |>
   arrange(term) |>
   column_to_rownames("term") |>
@@ -86,41 +85,40 @@ write_tsv(c_df,snakemake@output$genotype)
 
 # standardize the colors for these plots
 palette_len <- 10
-colors <- colorRampPalette( c("blue","white","red"))(palette_len)
+colors <- colorRampPalette( c("white","red"))(palette_len)
 #colors <- viridis::viridis(palette_len,direction = 1,begin = 1,end=0.1)
 
 breaks <- seq(min(c_df[,-1]), max(c_df[-1]), length.out =palette_len)
 
 pdf(snakemake@output$mut_vs_wt)
-c_df |>
+x <- c_df |>
   filter(str_detect(term,"MUT")) |>
   dplyr::select(c(term,contains("WT"))) |>
-  dplyr::select(term,cl1_WT,cl2_WT,cl3_WT,cl4_WT,cl5_WT,cl6_WT,cl7_WT,cl8_WT,cl9_WT,cl10_WT,cl11_WT,cl12_WT) |>
+  dplyr::select(term,matches("_WT")) |>
   mutate(term = fct_reorder(term,as.integer(str_extract(term,"\\d+")))) |>
   arrange(term) |>
-  column_to_rownames("term") |>
-  pheatmap::pheatmap(cluster_cols = F,cluster_rows = F,breaks = breaks, color = colors)
+  column_to_rownames("term")
+
+pheatmap::pheatmap(x[,order(as.integer(str_extract(colnames(x),"\\d+")))],cluster_cols = F,cluster_rows = F,breaks = breaks, color = colors)
 dev.off()
 
 pdf(snakemake@output$wt_vs_wt)
-c_df |>
+x <- c_df |>
   filter(str_detect(term,"WT")) |>
   dplyr::select(c(term,contains("WT"))) |>
-  dplyr::select(term,cl1_WT,cl2_WT,cl3_WT,cl4_WT,cl5_WT,cl6_WT,cl7_WT,cl8_WT,cl9_WT,cl10_WT,cl11_WT,cl12_WT) |>
   mutate(term = fct_reorder(term,as.integer(str_extract(term,"\\d+")))) |>
   arrange(term) |>
-  column_to_rownames("term") |>
-  pheatmap::pheatmap(cluster_cols = F,cluster_rows = F,breaks = breaks, color = colors)
+  column_to_rownames("term")
+pheatmap::pheatmap(x[,order(as.integer(str_extract(colnames(x),"\\d+")))],cluster_cols = F,cluster_rows = F,breaks = breaks, color = colors)
 dev.off()
 
 pdf(snakemake@output$mut_vs_mut)
-c_df |>
+x <- c_df |>
   filter(str_detect(term,"MUT")) |>
   #filter(!term %in% c("cl10_MUT","cl11_MUT","cl12_MUT")) |>
   dplyr::select(c(term,contains("MUT"))) |>
-  dplyr::select(term,cl1_MUT,cl2_MUT,cl3_MUT,cl4_MUT,cl5_MUT,cl6_MUT,cl7_MUT,cl8_MUT,cl9_MUT,cl10_MUT,cl11_MUT,cl12_MUT) |>
   mutate(term = fct_reorder(term,as.integer(str_extract(term,"\\d+")))) |>
   arrange(term) |>
-  column_to_rownames("term") |>
-  pheatmap::pheatmap(cluster_cols = F,cluster_rows = F,breaks = breaks, color = colors)
+  column_to_rownames("term")
+pheatmap::pheatmap(x[,order(as.integer(str_extract(colnames(x),"\\d+")))],cluster_cols = F,cluster_rows = F,breaks = breaks, color = colors)
 dev.off()
