@@ -55,12 +55,13 @@ rule plot_cluster_label_correlation_matrices:
     output:
         jain_vs_jain = 'results/plots/cluster_label_correlation_matrices/cluster_label_correlation_matrix.jain_vs_jain.pdf',
         jain_vs_green2018 = 'results/plots/cluster_label_correlation_matrices/cluster_label_correlation_matrix.jain_vs_green2018.pdf',
+        mut_vs_green2018 = 'results/plots/cluster_label_correlation_matrices/cluster_label_correlation_matrix.mut_vs_green2018.pdf',
+        wt_vs_green2018 = 'results/plots/cluster_label_correlation_matrices/cluster_label_correlation_matrix.wt_vs_green2018.pdf',
         green2018_vs_green2018 = 'results/plots/cluster_label_correlation_matrices/cluster_label_correlation_matrix.green2018_vs_green2018.pdf',
-        no_genotype = 'results/plots/cluster_label_correlation_matrices/cluster_label_correlation_matrix.no_genotype.tsv.gz',
+        mat = 'results/plots/cluster_label_correlation_matrices/cluster_label_correlation_matrix.tsv.gz',
         mut_vs_mut = 'results/plots/cluster_label_correlation_matrices/cluster_label_correlation_matrix.mut_vs_mut.pdf',
         mut_vs_wt = 'results/plots/cluster_label_correlation_matrices/cluster_label_correlation_matrix.mut_vs_wt.pdf',
         wt_vs_wt = 'results/plots/cluster_label_correlation_matrices/cluster_label_correlation_matrix.wt_vs_wt.pdf',
-        genotype = 'results/plots/cluster_label_correlation_matrices/cluster_label_correlation_matrix.genotype.tsv.gz'
     params:
         odir = 'results/plots/cluster_label_correlation_matrices'
     script:
@@ -137,7 +138,7 @@ rule plot_preL_marker_pca:
 
 rule plot_germ_cell_cell_cycle_bar:
     input:
-        sce = rules.get_adult_germ_cells_cell_cycle.output.rds,
+        sce = rules.find_celltypes_adult_cmo.output.rds,
     output:
         pdf = 'results/plots/germ_cell_cycle_bar/germ_cell_cycle_bar.pdf',
         tsv = 'results/plots/germ_cell_cycle_bar/germ_cell_cycle_bar.tsv.gz'
@@ -146,7 +147,7 @@ rule plot_germ_cell_cell_cycle_bar:
 
 rule plot_genotype_proportions_per_germ_cluster_bar:
     input:
-        sce = rules.get_adult_germ_cells_cell_cycle.output.rds,
+        sce = rules.get_adult_germ_cells.output.rds,
     output:
         pdf = 'results/plots/genotype_proportions_per_cluster_bar/genotype_proportions_per_cluster_bar.pdf',
         tsv = 'results/plots/genotype_proportions_per_cluster_bar/genotype_proportions_per_cluster_bar.tsv.gz'

@@ -13,14 +13,14 @@ fl_wt <- ifelse(exists("snakemake"),snakemake@input$wt,"results/germ_cells/adult
 sce_wt <- read_rds(fl_wt)
 
 
-goi <- readxl::read_xlsx("data/green2018_supp3.xlsx",skip = 5) |> pull(gene)
+#goi <- readxl::read_xlsx("data/green2018_supp3.xlsx",skip = 5) |> pull(gene)
 
 # get correlations green et al clusters and our clusters
 gc12_mat <- readxl::read_xlsx("data/GSE112393_MergedAdultMouseST25_12GermCellClusters_AllGeneExp.xlsx",skip = 4) |>
   dplyr::rename(gene_name ="Cluster") |>
   filter(!row_number() %in% c(1,2)) |>
   inner_join(as_tibble(rowData(sce_wt)[,c("gene_id","gene_name")])) |>
-  filter(gene_name %in% goi) |>
+  #filter(gene_name %in% goi) |>
   dplyr::select(-gene_name) |>
   dplyr::relocate(gene_id)
 

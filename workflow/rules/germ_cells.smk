@@ -14,7 +14,7 @@ rule reprocess_adult_germ_cells:
     output:
         rds = "results/germ_cells/adult.sce.integrated.clustered.celltypes.germ_cell.reprocessed.rds",
     script:
-        "../scripts/germ_cells/reprocess-adult-germ-cells.R"
+        "../scripts/germ_cells/reprocess-adult-germ-cells.v2.R"
 
 
 rule reprocess_adult_germ_cells_wt:
