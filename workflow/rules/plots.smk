@@ -181,7 +181,7 @@ rule plot_celltype_mut_vs_wt_volcano_and_ma:
         ma = 'results/plots/celltype_mut_vs_wt_volcanos_and_ma/celltype_mut_vs_wt_ma.pdf',
         tsv = 'results/plots/celltype_mut_vs_wt_volcanos_and_ma/celltype_mut_vs_wt_volcano.tsv.gz'
     script:
-        "../scripts/plots/germ_cell_mut_vs_wt_volcano_and_ma.R"
+        "../scripts/plots/mut_vs_wt_volcano_and_ma.R"
 
 
 rule plot_germ_cell_mut_vs_wt_volcano_and_ma:
@@ -192,7 +192,7 @@ rule plot_germ_cell_mut_vs_wt_volcano_and_ma:
         ma = 'results/plots/germ_cell_mut_vs_wt_volcanos_and_ma/germ_cell_mut_vs_wt_ma.pdf',
         tsv = 'results/plots/germ_cell_mut_vs_wt_volcanos_and_ma/germ_cell_mut_vs_wt_volcano.tsv.gz'
     script:
-        "../scripts/plots/germ_cell_mut_vs_wt_volcano_and_ma.R"
+        "../scripts/plots/mut_vs_wt_volcano_and_ma.R"
 
 
 rule plot_per_cell_per_sample_de_jitter_broad:
