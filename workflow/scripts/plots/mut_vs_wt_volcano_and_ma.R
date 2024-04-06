@@ -11,8 +11,17 @@ de <- read_tsv(fl)
 de<- de |> 
   mutate(feat.type = if_else(str_detect(feature,"ENSMUSG"),"gene","TE"))
 
+
+# handle ordering whther using broad anno or numbered germ clusters
+if ("Spermatogonia" %in% de$celltype) {
+  celltype_ord <- c("Spermatogonia","Spermatocyte","RoundSpermatid","Elongating") 
+} else {
+  celltype_ord <- unique(as.character(de$celltype))
+  celltype_ord <- celltype_ord[str_extract(celltype_ord,"\\d+") |> as.integer() |> order()]
+}
+
 de <- de |>
-  mutate(celltype = fct_relevel(celltype,unique(de$celltype)[order(as.integer(str_extract(unique(de$celltype),'\\d+')))]))
+  mutate(celltype = fct_relevel(as.character(celltype),celltype_ord))
 
 plot_ma <- function(x) {
   arrange(x,-str_detect(feature,"ENSMUSG")) |>

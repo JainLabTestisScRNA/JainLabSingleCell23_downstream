@@ -37,6 +37,7 @@ rule all:
         #rules.plot_germ_cell_cell_cycle_bar.output,
         rules.plot_genotype_proportions_per_germ_cluster_bar.output,
         rules.plot_genotype_proportions_per_celltype_bar.output,
+        rules.plot_genotype_proportions_per_germ_soma_bar.output,
         rules.plot_celltype_mut_vs_wt_volcano_and_ma.output,
         rules.plot_germ_cell_mut_vs_wt_volcano_and_ma.output,
         rules.plot_barcode_overlap.output,
@@ -44,3 +45,4 @@ rule all:
         rules.plot_per_cell_per_sample_de_jitter_broad.output,
         rules.plot_per_cell_per_sample_de_jitter_germ_cells.output,
         rules.plot_de_te_heatmap_broad.output,
+        rules.plot_de_te_heatmap_gc.output,

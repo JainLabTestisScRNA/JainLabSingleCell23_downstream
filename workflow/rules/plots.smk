@@ -163,6 +163,16 @@ rule plot_genotype_proportions_per_celltype_bar:
     script:
         "../scripts/plots/genotype_proportions_per_celltype_bar.R"
 
+
+rule plot_genotype_proportions_per_germ_soma_bar:
+    input:
+        sce = rules.find_celltypes_adult_cmo.output.rds,
+    output:
+        pdf = 'results/plots/genotype_proportions_per_germ_soma_bar/genotype_proportions_per_germ_soma_bar.pdf',
+        tsv = 'results/plots/genotype_proportions_per_germ_soma_bar/genotype_proportions_per_germ_soma_bar.tsv.gz'
+    script:
+        "../scripts/plots/genotype_proportions_per_germ_soma_bar.R"
+
 rule plot_celltype_mut_vs_wt_volcano_and_ma:
     input:
         tsv = rules.adult_cmo_de.output.tsv,
@@ -171,7 +181,7 @@ rule plot_celltype_mut_vs_wt_volcano_and_ma:
         ma = 'results/plots/celltype_mut_vs_wt_volcanos_and_ma/celltype_mut_vs_wt_ma.pdf',
         tsv = 'results/plots/celltype_mut_vs_wt_volcanos_and_ma/celltype_mut_vs_wt_volcano.tsv.gz'
     script:
-        "../scripts/plots/celltype_mut_vs_wt_volcano_and_ma.R"
+        "../scripts/plots/germ_cell_mut_vs_wt_volcano_and_ma.R"
 
 
 rule plot_germ_cell_mut_vs_wt_volcano_and_ma:
@@ -222,5 +232,19 @@ rule plot_de_te_heatmap_broad:
         tsv = 'results/plots/de_te_heatmap/de_te_heatmap.broad_foldchange.tsv.gz'
     params:
         de_by = 'celltype',
+    script:
+        "../scripts/plots/de_te_heatmap_broad.R"
+
+rule plot_de_te_heatmap_gc:
+    input:
+        sce = rules.reprocess_adult_germ_cells.output.rds,
+        de = rules.adult_cmo_germ_cell_de.output.tsv,
+        classifications = config.get("dfam_te_classifications"),
+    output:
+        pdf_fdr = 'results/plots/de_te_heatmap/de_te_heatmap.gc_fdr.pdf',
+        pdf_foldchange = 'results/plots/de_te_heatmap/de_te_heatmap.gc_foldchange.pdf',
+        tsv = 'results/plots/de_te_heatmap/de_te_heatmap.gc_foldchange.tsv.gz'
+    params:
+        de_by = 'label',
     script:
         "../scripts/plots/de_te_heatmap_broad.R"

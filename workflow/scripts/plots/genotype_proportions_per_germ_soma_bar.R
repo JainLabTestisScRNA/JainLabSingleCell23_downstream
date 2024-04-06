@@ -11,7 +11,8 @@ sce <- read_rds(fl)
 
 x <- makePerCellDF(sce) |>
   as_tibble(rownames="cell") |>
-  dplyr::select(cell,label=celltype,genotype,batch)
+  mutate(cellgroup = if_else(celltype %in% c("Spermatogonia","Spermatocyte","RoundSpermatid","Elongating"),"germline","soma")) |>
+  dplyr::select(cell,label=cellgroup,genotype,batch)
 
 
 g <- ggplot(x,aes(genotype,fill=label)) +

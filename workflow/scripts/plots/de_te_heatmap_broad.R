@@ -7,14 +7,14 @@ theme_set(theme_classic())
 
 de_by <-  ifelse(exists("snakemake"),
                  snakemake@params$de_by,
-                 "celltype")
+                 "label")
 
 # regex for column used for differential expression (currently 'label' for GC clusters,"celltype" for overall)
 de_by <- sprintf("^%s$",de_by)
 
 sce_fl <- ifelse(exists("snakemake"),
                  snakemake@input$sce,
-                 "results/integration/adult.sce.integrated.clustered.celltypes.rds")
+                 "results/germ_cells/adult.sce.integrated.clustered.celltypes.germ_cell.reprocessed.rds")
 
 sce <- read_rds(sce_fl)
 
@@ -22,18 +22,24 @@ sce <- read_rds(sce_fl)
 # get de results, filtering and ordering by celltypes we want to examine
 de_fl <- ifelse(exists("snakemake"),
                 snakemake@input$de,
-                "results/differential_expression/adult.tbl.pseudobulk.de.tsv.gz")
+                "results/differential_expression/adult.tbl.germ_cell.reprocessed.de.tsv.gz")
 
 de <- read_tsv(de_fl)
 
-celltype_ord <- c("Spermatogonia","Spermatocyte","RoundSpermatid","Elongating") 
+# handle ordering whther using broad anno or numbered germ clusters
+if ("Spermatogonia" %in% de$celltype) {
+  celltype_ord <- c("Spermatogonia","Spermatocyte","RoundSpermatid","Elongating") 
+} else {
+  celltype_ord <- unique(de$celltype)
+  celltype_ord <- celltype_ord[str_extract(celltype_ord,"\\d+") |> as.integer() |> order()]
+}
+
 de <- de |>
   filter(celltype %in% celltype_ord) |>
   mutate(celltype = fct_relevel(celltype,rev(celltype_ord)))
 
-
 # ------------------------------------------------------------------------------
-# get repeat type classiciations and creat a df for annotating TE features
+# get repeat type classiciations and create a df for annotating TE features
 classification_fl <- 
   ifelse(exists("snakemake"),
          snakemake@input$classification,
@@ -41,15 +47,6 @@ classification_fl <-
 
 classification <- read_tsv(classification_fl) |>
   dplyr::select(dfam_name,classification)
-
-
-#classification <- filter(de,!str_detect(feature,"ENSMUSG")) |>
-#  left_join(classification,by=c(feature="dfam_name")) |>
-#  filter(FDR < 0.05) |>
-#  #filter(classification == "LINE") |>
-#  dplyr::select(feature,classification) |>
-#  arrange(classification) |>
-#  distinct()
 
 # ------------------------------------------------------------------------------
 # heatmap of fold changes
