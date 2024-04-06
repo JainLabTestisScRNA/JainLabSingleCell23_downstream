@@ -217,7 +217,7 @@ rule plot_de_te_heatmap_broad:
         sce = rules.find_celltypes_adult_cmo.output.rds,
         classifications = config.get("dfam_te_classifications"),
     output:
-        pdf = 'results/plots/de_te_heatmap/de_te_heatmap.broad.pdf',
+        pdf_fdr = 'results/plots/de_te_heatmap/de_te_heatmap.broad_fdr.pdf',
         pdf_foldchange = 'results/plots/de_te_heatmap/de_te_heatmap.broad_foldchange.pdf',
         tsv = 'results/plots/de_te_heatmap/de_te_heatmap.broad_foldchange.tsv.gz'
     params:
