@@ -49,6 +49,11 @@ rule plot_reprocessed_germ_cell_pca:
     script:
         "../scripts/plots/reprocessed_germ_cell_pca.R"
 
+
+# -----------------------------------------------------------------------------
+# Cluster label correlation matrices
+# -----------------------------------------------------------------------------
+
 rule plot_cluster_label_correlation_matrices:
     input:
         sce = rules.reprocess_adult_germ_cells.output.rds,
@@ -69,6 +74,9 @@ rule plot_cluster_label_correlation_matrices:
 
 
 rule plot_cluster_label_correlation_matrices_wt_mut:
+    """
+    for completely separately processed wt and  mut - probably not to be used
+    """
     input:
         mut = rules.reprocess_adult_germ_cells_mut.output.rds,
         wt = rules.reprocess_adult_germ_cells_wt.output.rds,
@@ -81,6 +89,11 @@ rule plot_cluster_label_correlation_matrices_wt_mut:
         odir = 'results/plots/cluster_label_correlation_matrices_wt_mut'
     script:
         "../scripts/plots/cluster_label_correlation_matrices_wt_mut.R"
+
+
+# -----------------------------------------------------------------------------
+# Marker gene plots
+# -----------------------------------------------------------------------------
 
 rule plot_overall_marker_genes:
     input:
@@ -136,21 +149,18 @@ rule plot_preL_marker_pca:
     script:
         "../scripts/plots/preL_marker_pca.R"
 
-rule plot_germ_cell_cell_cycle_bar:
-    input:
-        sce = rules.find_celltypes_adult_cmo.output.rds,
-    output:
-        pdf = 'results/plots/germ_cell_cycle_bar/germ_cell_cycle_bar.pdf',
-        tsv = 'results/plots/germ_cell_cycle_bar/germ_cell_cycle_bar.tsv.gz'
-    script:
-        "../scripts/plots/germ_cell_cell_cycle_bar.R"
+
+
+# -----------------------------------------------------------------------------
+# Genotype proportion plots
+# -----------------------------------------------------------------------------
 
 rule plot_genotype_proportions_per_germ_cluster_bar:
     input:
         sce = rules.get_adult_germ_cells.output.rds,
     output:
-        pdf = 'results/plots/genotype_proportions_per_cluster_bar/genotype_proportions_per_cluster_bar.pdf',
-        tsv = 'results/plots/genotype_proportions_per_cluster_bar/genotype_proportions_per_cluster_bar.tsv.gz'
+        pdf = 'results/plots/genotype_proportions/genotype_proportions_per_cluster_bar.pdf',
+        tsv = 'results/plots/genotype_proportions/genotype_proportions_per_cluster_bar.tsv.gz'
     script:
         "../scripts/plots/genotype_proportions_per_germ_cluster_bar.R"
 
@@ -158,8 +168,8 @@ rule plot_genotype_proportions_per_celltype_bar:
     input:
         sce = rules.find_celltypes_adult_cmo.output.rds,
     output:
-        pdf = 'results/plots/genotype_proportions_per_celltype_bar/genotype_proportions_per_celltype_bar.pdf',
-        tsv = 'results/plots/genotype_proportions_per_celltype_bar/genotype_proportions_per_celltype_bar.tsv.gz'
+        pdf = 'results/plots/genotype_proportions/genotype_proportions_per_celltype_bar.pdf',
+        tsv = 'results/plots/genotype_proportions/genotype_proportions_per_celltype_bar.tsv.gz'
     script:
         "../scripts/plots/genotype_proportions_per_celltype_bar.R"
 
@@ -168,18 +178,22 @@ rule plot_genotype_proportions_per_germ_soma_bar:
     input:
         sce = rules.find_celltypes_adult_cmo.output.rds,
     output:
-        pdf = 'results/plots/genotype_proportions_per_germ_soma_bar/genotype_proportions_per_germ_soma_bar.pdf',
-        tsv = 'results/plots/genotype_proportions_per_germ_soma_bar/genotype_proportions_per_germ_soma_bar.tsv.gz'
+        pdf = 'results/plots/genotype_proportions/genotype_proportions_per_germ_soma_bar.pdf',
+        tsv = 'results/plots/genotype_proportions/genotype_proportions_per_germ_soma_bar.tsv.gz'
     script:
         "../scripts/plots/genotype_proportions_per_germ_soma_bar.R"
+
+# -----------------------------------------------------------------------------
+# Differential expression plots
+# -----------------------------------------------------------------------------
 
 rule plot_celltype_mut_vs_wt_volcano_and_ma:
     input:
         tsv = rules.adult_cmo_de.output.tsv,
     output:
-        volcano = 'results/plots/celltype_mut_vs_wt_volcanos_and_ma/celltype_mut_vs_wt_volcano.pdf',
-        ma = 'results/plots/celltype_mut_vs_wt_volcanos_and_ma/celltype_mut_vs_wt_ma.pdf',
-        tsv = 'results/plots/celltype_mut_vs_wt_volcanos_and_ma/celltype_mut_vs_wt_volcano.tsv.gz'
+        volcano = 'results/plots/mut_vs_wt_volcanos_and_ma/celltype_mut_vs_wt_volcano.pdf',
+        ma = 'results/plots/mut_vs_wt_volcanos_and_ma/celltype_mut_vs_wt_ma.pdf',
+        tsv = 'results/plots/mut_vs_wt_volcanos_and_ma/celltype_mut_vs_wt_volcano.tsv.gz'
     script:
         "../scripts/plots/mut_vs_wt_volcano_and_ma.R"
 
@@ -188,9 +202,9 @@ rule plot_germ_cell_mut_vs_wt_volcano_and_ma:
     input:
         tsv = rules.adult_cmo_germ_cell_de.output.tsv,
     output:
-        volcano = 'results/plots/germ_cell_mut_vs_wt_volcanos_and_ma/germ_cell_mut_vs_wt_volcano.pdf',
-        ma = 'results/plots/germ_cell_mut_vs_wt_volcanos_and_ma/germ_cell_mut_vs_wt_ma.pdf',
-        tsv = 'results/plots/germ_cell_mut_vs_wt_volcanos_and_ma/germ_cell_mut_vs_wt_volcano.tsv.gz'
+        volcano = 'results/plots/mut_vs_wt_volcanos_and_ma/germ_cell_mut_vs_wt_volcano.pdf',
+        ma = 'results/plots/mut_vs_wt_volcanos_and_ma/germ_cell_mut_vs_wt_ma.pdf',
+        tsv = 'results/plots/mut_vs_wt_volcanos_and_ma/germ_cell_mut_vs_wt_volcano.tsv.gz'
     script:
         "../scripts/plots/mut_vs_wt_volcano_and_ma.R"
 
@@ -248,3 +262,15 @@ rule plot_de_te_heatmap_gc:
         de_by = 'label',
     script:
         "../scripts/plots/de_te_heatmap_broad.R"
+
+# -----------------------------------------------------------------------------
+# Cell cycle plots
+# -----------------------------------------------------------------------------
+rule plot_germ_cell_cell_cycle_bar:
+    input:
+        sce = rules.find_celltypes_adult_cmo.output.rds,
+    output:
+        pdf = 'results/plots/germ_cell_cycle_bar/germ_cell_cycle_bar.pdf',
+        tsv = 'results/plots/germ_cell_cycle_bar/germ_cell_cycle_bar.tsv.gz'
+    script:
+        "../scripts/plots/germ_cell_cell_cycle_bar.R"
