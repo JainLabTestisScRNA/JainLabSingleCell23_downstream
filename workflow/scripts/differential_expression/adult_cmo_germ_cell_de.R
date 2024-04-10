@@ -18,6 +18,8 @@ summed$genotype <- summed$genotype |> factor() |> relevel(ref = "WT")
 
 summed.filt <- summed[,summed$ncells >= 5]
 
+summed.filt <- summed.filt[rowSums(counts(summed.filt)) > 5*ncol(summed.filt),]
+
 de.results <- pseudoBulkDGE(summed.filt, 
                             label=summed.filt$label,
                             design=~batch + genotype,
