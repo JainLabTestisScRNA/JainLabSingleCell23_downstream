@@ -71,7 +71,7 @@ g1 <- fc |>
   scale_fill_gradient2(breaks=scales::pretty_breaks(n=4)(-max(abs(fc$logFC)):max(abs(fc$logFC))),limits=c(-max(abs(fc$logFC)),max(abs(fc$logFC))),low = "blue",high="red") +
   theme(axis.text.x = element_text(angle=45,hjust=1))
 
-ggsave(snakemake@output$pdf_foldchange,g1,height = 4,width = 8)
+ggsave(snakemake@output$pdf_foldchange,g1,height = 4,width = snakemake@params$width)
 
 
 g2 <- fc |>
@@ -84,6 +84,6 @@ g2 <- fc |>
   scale_fill_gradient(low = "white",high="darkgreen") +
   theme(axis.text.x = element_text(angle=45,hjust=1))
 
-ggsave(snakemake@output$pdf_fdr,g2,height = 4,width = 8)
+ggsave(snakemake@output$pdf_fdr,g2,height = 4,width = snakemake@params$width)
 
 write_tsv(fc,snakemake@output$tsv)
