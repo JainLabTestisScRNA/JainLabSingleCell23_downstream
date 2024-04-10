@@ -25,6 +25,8 @@ garnett_fl <- snakemake@input$garnett_fl
 # https://cole-trapnell-lab.github.io/garnett/docs_m3/#loading-your-data
 # https://cole-trapnell-lab.github.io/garnett/docs_m3/#installing-garnett
 
+#colData(corrected)$garnett_cluster <- corrected$label |> as.character()
+
 mono_cds <- new_cell_data_set(logcounts(corrected),cell_metadata = colData(corrected),gene_metadata = rowData(corrected))
 
 

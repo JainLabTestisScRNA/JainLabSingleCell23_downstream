@@ -25,13 +25,13 @@ de <- de |>
 
 plot_ma <- function(x) {
   arrange(x,-str_detect(feature,"ENSMUSG")) |>
-    ggplot(aes(logCPM,logFC,color=feat.type,alpha=FDR < 0.05)) +
-    geom_point(size=rel(0.5)) +
-    geom_point(data=\(x)filter(x,feat.type=="TE"&FDR <0.05),size=rel(2),shape=21,color="black",fill=NA) +
+    ggplot(aes(logCPM,logFC)) +
+    geom_point(data=\(x)filter(x,FDR>0.05),color="lightgray",size=rel(0.5)) +
+    geom_point(data=\(x)filter(x,FDR<=0.05),color="darkgray",size=rel(0.5)) +
+    geom_point(data=\(x)filter(x,feat.type=="TE"&FDR <0.05),size=rel(2),shape=21,color="red",fill=NA) +
     facet_wrap(~celltype,ncol=4) +
     geom_hline(yintercept=0,linetype="dotted") +
     theme(aspect.ratio = 0.5) +
-    scale_color_manual(values = c(gene="darkgray","TE"="red")) +
     ylab("logFC (MUT/WT)")
 }
 
@@ -46,9 +46,10 @@ dev.off()
 
 plot_volc <-  function(x) {
     arrange(x,-str_detect(feature,"ENSMUSG")) |>
-    ggplot(aes(logFC,-log10(FDR),alpha=FDR < 0.05,color=feat.type)) +
-    geom_point(size=rel(0.5)) +
-    geom_point(data=\(x)filter(x,feat.type=="TE"&FDR <0.05),size=rel(2),shape=21,color="black",fill=NA) +
+    ggplot(aes(logFC,-log10(FDR),color=feat.type)) +
+    geom_point(data=\(x)filter(x,FDR>0.05),color="lightgray",size=rel(0.5)) +
+    geom_point(data=\(x)filter(x,FDR<=0.05),color="darkgray",size=rel(0.5)) +
+    geom_point(data=\(x)filter(x,feat.type=="TE"&FDR <0.05),size=rel(2),shape=21,color="red",fill=NA) +
     facet_wrap(~celltype,ncol=1) +
     geom_hline(yintercept=-log10(0.05),linetype="dotted") +
     theme(aspect.ratio = 0.5) +
