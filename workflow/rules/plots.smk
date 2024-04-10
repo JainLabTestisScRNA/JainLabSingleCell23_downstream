@@ -41,8 +41,7 @@ rule plot_reprocessed_germ_cell_pca:
     input:
         sce = rules.lift_over_mut_adult_germ_cells.output.rds,
     output:
-        pc1_pc2 = 'results/plots/reprocessed_germ_cell_pca/reprocessed_germ_cell_pca.pc1_pc2.pdf',
-        pc1_pc3 = 'results/plots/reprocessed_germ_cell_pca/reprocessed_germ_cell_pca.pc1_pc3.pdf',
+        pdf = 'results/plots/reprocessed_germ_cell_pca/reprocessed_germ_cell_pca.pdf',
         tsv = 'results/plots/reprocessed_germ_cell_pca/reprocessed_germ_cell_pca.tsv.gz'
     params:
         odir = 'results/plots/reprocessed_germ_cell_pca'

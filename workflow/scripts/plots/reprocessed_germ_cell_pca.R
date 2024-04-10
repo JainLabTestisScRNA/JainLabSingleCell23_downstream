@@ -5,7 +5,7 @@ library(scuttle)
 
 theme_set(theme_classic())
 
-fl <- ifelse(exists("snakemake"),snakemake@input$sce,"results/germ_cells/adult.sce.integrated.clustered.celltypes.germ_cell.reprocessed.rds")
+fl <- ifelse(exists("snakemake"),snakemake@input$sce,"results/germ_cells/adult.sce.germ_cell.both_genotypes.subclustered.reintegrated.rds")
 sce <- read_rds(fl)
 
 
@@ -17,8 +17,27 @@ g13 <- plotReducedDim(sce,"corrected",
                       ncomponents = c(1,3),
                       colour_by = "label",swap_rownames = "gene_name",text_by = "label")
 
-ggsave(snakemake@output$pc1_pc2,g12)
-ggsave(snakemake@output$pc1_pc3,g13)
+
+g12_gt <- plotReducedDim(sce,"corrected",other_fields = "genotype",
+                      ncomponents = c(1,2),
+                      colour_by = "label",swap_rownames = "gene_name",text_by = "label") +
+  facet_wrap(~genotype)
+
+g13_gt <- plotReducedDim(sce,"corrected", other_fields = "genotype",
+                      ncomponents = c(1,3),
+                      colour_by = "label",swap_rownames = "gene_name",text_by = "label") +
+  facet_wrap(~genotype)
+
+pdf(snakemake@output$pdf)
+g12
+
+g13
+
+g12_gt
+
+g13_gt
+
+dev.off()
 
 
 sce |> makePerCellDF() |>
