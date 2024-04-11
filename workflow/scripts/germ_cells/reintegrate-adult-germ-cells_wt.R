@@ -10,26 +10,34 @@ library(TSCAN)
 
 sce_fls <- Sys.glob("results/germ_cells/adult.sce.germ_cell.wt.*.subclustered.rds")
 sce_fls <-  snakemake@input$sces
-sce <- map(sce_fls,read_rds)
+sces <- map(sce_fls,read_rds)
 
-sce <- map(sce,~{rowSubset(.x) <- NULL;reducedDim(.x) <-  NULL;.x})
+sces <- map(sces,~{rowSubset(.x) <- NULL;reducedDim(.x) <-  NULL;.x})
 
-sce <- do.call(cbind,sce)
+all.dec <- lapply(sces, modelGeneVar)
+
+combined.dec <- do.call(combineVar, all.dec)
+chosen <- getTopHVGs(combined.dec, prop=0.1)
+
+# don't consider TEs
+chosen <- chosen[str_detect(chosen,"ENSMUSG")]
+
+sce <- do.call(cbind,sces)
 
 # ------------------------------------------------------------------------------
 # variable feature selection
-dec <- modelGeneVar(sce,block=sce$batch)
-hvg.var <- getTopHVGs(dec, prop = 0.1)
+#dec <- modelGeneVar(sce,block=sce$batch)
+#hvg.var <- getTopHVGs(dec, prop = 0.1)
   
-tes <- rowData(sce)[rowData(sce)$gene_biotype %in% "repeat_element" ,] |> rownames()
+#tes <- rowData(sce)[rowData(sce)$gene_biotype %in% "repeat_element" ,] |> rownames()
   
-hvtes <- hvg.var[hvg.var %in% tes]
+#hvtes <- hvg.var[hvg.var %in% tes]
   
-chosen <- hvg.var[!hvg.var %in% tes & !hvg.var %in% subset(rowData(sce),grepl("^mt-",gene_name))$gene_name]
+#chosen <- hvg.var[!hvg.var %in% tes & !hvg.var %in% subset(rowData(sce),grepl("^mt-",gene_name))$gene_name]
   
-rowSubset(sce) <- chosen
-metadata(sce)$highly.variable.tes <- hvtes
-metadata(sce)$highly.variable.genes <- chosen
+#rowSubset(sce) <- chosen
+#metadata(sce)$highly.variable.tes <- hvtes
+#metadata(sce)$highly.variable.genes <- chosen
   
 # ------------------------------------------------------------------------------
 # PCA - without influence of TEs
@@ -61,8 +69,8 @@ assay(sce,"reconstructed") <- assay(mnn.out,"reconstructed")
 
 pseudo.out <- quickPseudotime(sce,use.dimred="corrected", 
                               use.median = F,
-                              dist.method="simple",
-                              columns=c(1:2),
+                              dist.method="slingshot",
+                              columns=c(1,2),
                               start="1/Spermatogonia",clusters = sce$label,endpoints="1/Elongating")
 
 common.pseudo <- averagePseudotime(pseudo.out$ordering,1)
@@ -74,7 +82,7 @@ label_lookup <- makePerCellDF(sce)[,c("label","celltype","pseudotime")] |>
   as_tibble(rownames = "cell") |>
   mutate(labelNum = str_extract(label,"\\d+")) |>
   group_by(labelNum,label,celltype) |>
-  summarise(pseudotime = median(pseudotime),.groups = "drop") |>
+  summarise(pseudotime = mean(pseudotime),.groups = "drop") |>
   mutate(newlabel = paste(rank(round(pseudotime,1),ties="min"),celltype,sep="/")) |>
   dplyr::select(label,newlabel) |>
   deframe()

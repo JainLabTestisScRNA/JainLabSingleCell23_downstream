@@ -29,6 +29,7 @@ plot_ma <- function(x) {
     geom_point(data=\(x)filter(x,FDR>0.05),color="lightgray",size=rel(0.5)) +
     geom_point(data=\(x)filter(x,FDR<=0.05),color="darkgray",size=rel(0.5)) +
     geom_point(data=\(x)filter(x,feat.type=="TE"&FDR <0.05),size=rel(2),shape=21,color="red",fill=NA) +
+    ggrepel::geom_text_repel(data = \(x) filter(x,str_detect(feature,"L1MdA_I_")),aes(label=feature),min.segment.length = 0.1) +
     facet_wrap(~celltype,ncol=4) +
     geom_hline(yintercept=0,linetype="dotted") +
     theme(aspect.ratio = 0.5) +
