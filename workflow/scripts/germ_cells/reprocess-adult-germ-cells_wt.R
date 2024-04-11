@@ -13,7 +13,7 @@ sce_fl <-  snakemake@input$sce
 sce <- read_rds(sce_fl)
 
 k <- 3
-k  <- snakemake@params$expected
+k  <- snakemake@params$k
 
 
 # ------------------------------------------------------------------------------
@@ -64,7 +64,7 @@ nn.clust <- clusterCells(sce,use.dimred = "corrected", full=F,
   
 colLabels(sce) <- nn.clust |> as.character() |> paste(sce$celltype,sep="/")
 
-#plotReducedDim(sce,dimred = "corrected",ncomponents = c(1,2),colour_by = "label",swap_rownames = "gene_name")
+plotReducedDim(sce,dimred = "corrected",ncomponents = c(1,2),colour_by = "Tex101",swap_rownames = "gene_name")
 
 write_rds(sce,snakemake@output$rds)
 

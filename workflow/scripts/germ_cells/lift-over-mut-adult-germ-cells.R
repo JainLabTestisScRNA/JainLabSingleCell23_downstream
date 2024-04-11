@@ -76,11 +76,14 @@ assay(sce,"reconstructed") <- assay(mnn.out,"reconstructed")
 #plotReducedDim(sce,"corrected",colour_by = "label",text_by = "label",ncomponents = c(1,2),swap_rownames = "gene_name")
 #plotReducedDim(sce,"corrected",colour_by = "label",ncomponents = c(1,2),swap_rownames = "gene_name")
 
+last_cl <- sce$label |> unique()
+last_cl <- last_cl[which.max(str_extract(last_cl,"\\d+") |> as.integer())]
+
 pseudo.out <- quickPseudotime(sce,use.dimred="corrected", 
                               use.median = F,
-                              dist.method="simple",
+                              dist.method="slingshot",
                               columns=c(1,2),
-                              start="1/Spermatogonia",clusters = sce$label,endpoints="6/Elongating")
+                              start="1/Spermatogonia",clusters = sce$label,endpoints=last_cl)
 
 common.pseudo <- averagePseudotime(pseudo.out$ordering,1)
 

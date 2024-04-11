@@ -11,22 +11,26 @@ sce <- read_rds(fl)
 
 g12 <- plotReducedDim(sce,"corrected",
                      ncomponents = c(1,2),
-                     colour_by = "label",swap_rownames = "gene_name",text_by = "label")
+                     colour_by = "label",swap_rownames = "gene_name",text_by = "label") +
+  coord_fixed()
 
 g13 <- plotReducedDim(sce,"corrected",
                       ncomponents = c(1,3),
-                      colour_by = "label",swap_rownames = "gene_name",text_by = "label")
+                      colour_by = "label",swap_rownames = "gene_name",text_by = "label") +
+  coord_fixed()
 
 
 g12_gt <- plotReducedDim(sce,"corrected",other_fields = "genotype",
                       ncomponents = c(1,2),
                       colour_by = "label",swap_rownames = "gene_name",text_by = "label") +
-  facet_wrap(~genotype)
+  facet_wrap(~genotype) +
+  coord_fixed() 
 
 g13_gt <- plotReducedDim(sce,"corrected", other_fields = "genotype",
                       ncomponents = c(1,3),
                       colour_by = "label",swap_rownames = "gene_name",text_by = "label") +
-  facet_wrap(~genotype)
+  facet_wrap(~genotype) +
+  coord_fixed()
 
 pdf(snakemake@output$pdf)
 g12

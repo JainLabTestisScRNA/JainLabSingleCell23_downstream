@@ -19,8 +19,8 @@ garnett_classifier:
 
 dfam_te_classifications: data/dfam_classification.parsed.txt
 
-expected_gc_subclusters:
+gc_subclusters_k:
   Spermatogonia: 1
   Spermatocyte: 2
-  RoundSpermatid: 2
+  RoundSpermatid: 3
   Elongating: 1

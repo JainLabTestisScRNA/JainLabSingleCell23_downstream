@@ -18,7 +18,7 @@ rule subcluster_wt_adult_germ_cells:
     output:
         rds = "results/germ_cells/adult.sce.germ_cell.wt.{gc_type}.subclustered.rds",
     params:
-        expected =  lambda wc: config.get("expected_gc_subclusters").get(wc.gc_type),
+        k =  lambda wc: config.get("gc_subclusters_k").get(wc.gc_type),
     script:
         "../scripts/germ_cells/reprocess-adult-germ-cells_wt.R"
 
