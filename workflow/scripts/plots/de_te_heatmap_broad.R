@@ -14,7 +14,7 @@ de_by <- sprintf("^%s$",de_by)
 
 sce_fl <- ifelse(exists("snakemake"),
                  snakemake@input$sce,
-                 "results/germ_cells/adult.sce.integrated.clustered.celltypes.germ_cell.reprocessed.rds")
+                 "results/germ_cells/adult.sce.germ_cell.both_genotypes.subclustered.reintegrated.rds")
 
 sce <- read_rds(sce_fl)
 
@@ -53,8 +53,9 @@ classification <- read_tsv(classification_fl) |>
 
 fc <- filter(de,!str_detect(feature,"ENSMUSG")) |>
   group_by(feature) |>
-  filter(any(FDR<0.05)) |>
+  filter(any(FDR<=0.05)) |>
   ungroup() |>
+  mutate(logFC = if_else(FDR > 0.05,NA,logFC)) |>
   left_join(classification,by=c(feature="dfam_name")) |>
   #filter(classification == "LINE") |>
   dplyr::select(feature,classification,celltype,logFC,FDR) |>
@@ -68,7 +69,7 @@ g1 <- fc |>
   ggplot(aes(feature,celltype,fill=logFC)) +
   geom_tile() +
   facet_grid(.~classification,scales="free",space = "free") +
-  scale_fill_gradient2(breaks=scales::pretty_breaks(n=4)(-max(abs(fc$logFC)):max(abs(fc$logFC))),limits=c(-max(abs(fc$logFC)),max(abs(fc$logFC))),low = "blue",high="red") +
+  scale_fill_gradient2(breaks=scales::pretty_breaks(n=4)(-max(abs(fc$logFC),na.rm = T):max(abs(fc$logFC),na.rm = T)),limits=c(-max(abs(fc$logFC),na.rm = T),max(abs(fc$logFC),na.rm = T)),low = "blue",high="red") +
   theme(axis.text.x = element_text(angle=45,hjust=1))
 
 ggsave(snakemake@output$pdf_foldchange,g1,height = 4,width = snakemake@params$width)
