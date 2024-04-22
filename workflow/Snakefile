@@ -24,6 +24,7 @@ rule all:
         # plots
         rules.plot_barcode_overlap.output,
         rules.plot_check_normalization.output,
+        rules.plot_basic_qc_violin.output,
         rules.plot_genotype_facetted_umap.output,
         rules.plot_germ_and_somatic_pca.output,
         rules.plot_reprocessed_germ_cell_pca.output,
@@ -44,3 +45,4 @@ rule all:
         rules.plot_de_te_heatmap_broad.output,
         rules.plot_de_te_heatmap_gc.output,
         rules.plot_gc_fdr_jitter.output,
+        rules.plot_combined_line_counts.output,

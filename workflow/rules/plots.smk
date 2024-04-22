@@ -16,6 +16,15 @@ rule plot_check_normalization:
     script:
         "../scripts/plots/check_normalization.R"
 
+rule plot_basic_qc_violin:
+    input:
+        sce = rules.find_celltypes_adult_cmo.output.rds,
+    output:
+        tsv = 'results/plots/basic_qc_violin/basic_qc_violin.tsv.gz',
+        pdf = 'results/plots/basic_qc_violin/basic_qc_violin.pdf'
+    script:
+        "../scripts/plots/basic_qc_violin.R"
+
 rule plot_genotype_facetted_umap:
     input:
         sce = rules.find_celltypes_adult_cmo.output.rds,
@@ -257,3 +266,13 @@ rule plot_gc_fdr_jitter:
         tsv = 'results/plots/gc_fdr_jitter/gc_fdr_jitter.tsv.gz'
     script:
         "../scripts/plots/gc_fdr_jitter.R"
+
+rule plot_combined_line_counts:
+    input:
+        sce = rules.lift_over_mut_adult_germ_cells.output.rds,
+        classifications = config.get("dfam_te_classifications"),
+    output:
+        pdf = 'results/plots/combined_line_counts/combined_line_counts.pdf',
+        tsv = 'results/plots/combined_line_counts/combined_line_counts.tsv.gz'
+    script:
+        "../scripts/plots/plot_combined_line_counts.R"
