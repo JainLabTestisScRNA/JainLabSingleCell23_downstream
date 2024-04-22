@@ -247,3 +247,13 @@ rule plot_de_te_heatmap_gc:
         width = 14,
     script:
         "../scripts/plots/de_te_heatmap_broad.R"
+
+
+rule plot_gc_fdr_jitter:
+    input:
+        tsv = rules.adult_cmo_germ_cell_de.output.tsv,
+    output:
+        pdf_fdr = 'results/plots/gc_fdr_jitter/gc_fdr_jitter.pdf',
+        tsv = 'results/plots/gc_fdr_jitter/gc_fdr_jitter.tsv.gz'
+    script:
+        "../scripts/plots/gc_fdr_jitter.R"
