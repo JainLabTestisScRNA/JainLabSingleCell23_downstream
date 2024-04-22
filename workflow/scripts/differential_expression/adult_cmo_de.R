@@ -11,7 +11,7 @@ sce <- read_rds(sce_fl)
 
 sce$seqrun <- sce$batch |> str_remove("_\\d$")
 
-summed <- aggregateAcrossCells(sce, 
+summed <- aggregateAcrossCells(sce,
                                id=colData(sce)[,c("seqrun","batch","genotype","celltype")])
 
 summed$genotype <- summed$genotype |> factor() |> relevel(ref = "WT")
@@ -24,6 +24,7 @@ de.results <- pseudoBulkDGE(summed.filt,
                             label=summed.filt$celltype,
                             design=~batch + genotype,
                             coef="genotypeMUT",
+                            method="edgeR",
                             condition=summed.filt$genotype ,
                             include.intermediates=T
 )
@@ -31,6 +32,7 @@ de.results <- pseudoBulkDGE(summed.filt,
 
 df <- de.results |>
   map_df(as_tibble,rownames="feature",.id="celltype") |>
+  #mutate(FDR = adj.P.Val) |>
   filter(!is.na(logFC))
 
 write_tsv(df,snakemake@output$tsv)

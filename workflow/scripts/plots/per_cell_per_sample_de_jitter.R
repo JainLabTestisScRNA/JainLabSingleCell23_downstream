@@ -50,7 +50,7 @@ df4 <- df3 |>
 # per DJ's recommendation
 df4$simple_batch <- df4$batch |> str_remove("_\\d$")
 
-retransformed_untransformed_mean <- \(x) log1p(mean(expm1(x)))
+retransformed_untransformed_mean <- \(x) log2(mean((2^x)-1)+1)
 
 plot_jitters <- function(x) {
   title <- unique(x$split_group)
@@ -58,7 +58,7 @@ plot_jitters <- function(x) {
     geom_point(position=position_jitterdodge(seed=2),size=0.2) +
     geom_violin(scale="width",fill=NA) +
     facet_wrap(~feature + simple_batch,scales = "free",nrow=1) +
-    stat_summary(geom="point",fun = retransformed_untransformed_mean,
+    stat_summary(geom="point",fun = mean,
                  color="red",aes(group=genotype),position=position_dodge(width = 1)) +
     scale_color_grey(start = 0,end=0.4) +
     guides(color="none")  +
