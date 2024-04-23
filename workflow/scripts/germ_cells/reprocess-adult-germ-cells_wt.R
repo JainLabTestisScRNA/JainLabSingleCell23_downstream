@@ -12,7 +12,7 @@ sce_fl <- "results/germ_cells/adult.sce.germ_cell.wt.Spermatogonia.rds"
 sce_fl <-  snakemake@input$sce
 sce <- read_rds(sce_fl)
 
-k <- 3
+k <- 2
 k  <- snakemake@params$k
 
 

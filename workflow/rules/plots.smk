@@ -276,3 +276,17 @@ rule plot_combined_line_counts:
         tsv = 'results/plots/combined_line_counts/combined_line_counts.tsv.gz'
     script:
         "../scripts/plots/plot_combined_line_counts.R"
+
+# -----------------------------------------------------------------------------
+# te expression
+# -----------------------------------------------------------------------------
+
+rule plot_heatmap_wt_te_expression:
+    input:
+        sce = rules.lift_over_mut_adult_germ_cells.output.rds,
+        classifications = config.get("dfam_te_classifications"),
+    output:
+        pdf = 'results/plots/heatmap_wt_te_expression/heatmap_wt_te_expression.pdf',
+        tsv = 'results/plots/heatmap_wt_te_expression/heatmap_wt_te_expression.tsv.gz'
+    script:
+        "../scripts/plots/heatmap_wt_te_expression.R"

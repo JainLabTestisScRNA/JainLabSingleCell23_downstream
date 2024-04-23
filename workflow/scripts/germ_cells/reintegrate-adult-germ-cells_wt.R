@@ -25,21 +25,6 @@ chosen <- chosen[str_detect(chosen,"ENSMUSG")]
 sce <- do.call(cbind,sces)
 
 # ------------------------------------------------------------------------------
-# variable feature selection
-#dec <- modelGeneVar(sce,block=sce$batch)
-#hvg.var <- getTopHVGs(dec, prop = 0.1)
-  
-#tes <- rowData(sce)[rowData(sce)$gene_biotype %in% "repeat_element" ,] |> rownames()
-  
-#hvtes <- hvg.var[hvg.var %in% tes]
-  
-#chosen <- hvg.var[!hvg.var %in% tes & !hvg.var %in% subset(rowData(sce),grepl("^mt-",gene_name))$gene_name]
-  
-#rowSubset(sce) <- chosen
-#metadata(sce)$highly.variable.tes <- hvtes
-#metadata(sce)$highly.variable.genes <- chosen
-  
-# ------------------------------------------------------------------------------
 # PCA - without influence of TEs
 # ------------------------------------------------------------------------------
 sce <- fixedPCA(sce, subset.row=chosen,rank = 50)
@@ -82,7 +67,7 @@ label_lookup <- makePerCellDF(sce)[,c("label","celltype","pseudotime")] |>
   as_tibble(rownames = "cell") |>
   mutate(labelNum = str_extract(label,"\\d+")) |>
   group_by(labelNum,label,celltype) |>
-  summarise(pseudotime = mean(pseudotime),.groups = "drop") |>
+  summarise(pseudotime = max(pseudotime),.groups = "drop") |>
   mutate(newlabel = paste(rank(round(pseudotime,1),ties="min"),celltype,sep="/")) |>
   dplyr::select(label,newlabel) |>
   deframe()
