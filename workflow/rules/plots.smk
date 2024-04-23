@@ -25,6 +25,15 @@ rule plot_basic_qc_violin:
     script:
         "../scripts/plots/basic_qc_violin.R"
 
+rule plot_overview_umap:
+    input:
+        sce = rules.find_celltypes_adult_cmo.output.rds,
+    output:
+        pdf = 'results/plots/overview_umap/overview_umap.pdf',
+        tsv = 'results/plots/overview_umap/overview_umap.tsv.gz'
+    script:
+        "../scripts/plots/overview_umap.R"
+
 rule plot_genotype_facetted_umap:
     input:
         sce = rules.find_celltypes_adult_cmo.output.rds,
@@ -123,6 +132,15 @@ rule plot_tex14_violin_all_cells:
     script:
         "../scripts/plots/tex14_violin_all_cells.R"
 
+rule plot_lymphoid_marker_genes_violin:
+    input:
+        sce = rules.find_celltypes_adult_cmo.output.rds,
+    output:
+        pdf = 'results/plots/lymphoid_marker_genes_violin/lymphoid_marker_genes_violin.pdf',
+        tsv = 'results/plots/lymphoid_marker_genes_violin/lymphoid_marker_genes_violin.tsv.gz'
+    script:
+        "../scripts/plots/lymphoid_marker_genes_violin.R"
+
 rule plot_preL_violin:
     input:
         sce = rules.lift_over_mut_adult_germ_cells.output.rds,
@@ -140,6 +158,16 @@ rule plot_preL_marker_pca:
         tsv = 'results/plots/preL_marker_pca/preL_marker_pca.tsv.gz'
     script:
         "../scripts/plots/preL_marker_pca.R"
+
+rule plot_cell_cycle_assignment:
+    input:
+        sce = rules.lift_over_mut_adult_germ_cells.output.rds,
+        msigdb = config.get("msigdb"),
+    output:
+        pdf = 'results/plots/cell_cycle_assignment/cell_cycle_assignment.pdf',
+        tsv = 'results/plots/cell_cycle_assignment/cell_cycle_assignment.tsv.gz'
+    script:
+        "../scripts/germ_cells/cell_cycle_assignment.R"
 
 
 
@@ -267,16 +295,6 @@ rule plot_gc_fdr_jitter:
     script:
         "../scripts/plots/gc_fdr_jitter.R"
 
-rule plot_combined_line_counts:
-    input:
-        sce = rules.lift_over_mut_adult_germ_cells.output.rds,
-        classifications = config.get("dfam_te_classifications"),
-    output:
-        pdf = 'results/plots/combined_line_counts/combined_line_counts.pdf',
-        tsv = 'results/plots/combined_line_counts/combined_line_counts.tsv.gz'
-    script:
-        "../scripts/plots/plot_combined_line_counts.R"
-
 # -----------------------------------------------------------------------------
 # te expression
 # -----------------------------------------------------------------------------
@@ -290,3 +308,13 @@ rule plot_heatmap_wt_te_expression:
         tsv = 'results/plots/heatmap_wt_te_expression/heatmap_wt_te_expression.tsv.gz'
     script:
         "../scripts/plots/heatmap_wt_te_expression.R"
+
+rule plot_combined_line_counts:
+    input:
+        sce = rules.lift_over_mut_adult_germ_cells.output.rds,
+        classifications = config.get("dfam_te_classifications"),
+    output:
+        pdf = 'results/plots/combined_line_counts/combined_line_counts.pdf',
+        tsv = 'results/plots/combined_line_counts/combined_line_counts.tsv.gz'
+    script:
+        "../scripts/plots/plot_combined_line_counts.R"

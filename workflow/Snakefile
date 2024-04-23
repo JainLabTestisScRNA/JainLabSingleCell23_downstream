@@ -4,6 +4,7 @@ wildcard_constraints:
     experiment= "|".join(x for x in config.get("cellranger_matrices").keys()),
     subset= "germ_cell",
 
+include: "rules/resource_prep.smk"
 include: "rules/cellranger-import.smk"
 include: "rules/single-cell-preproc.smk"
 include: "rules/germ_cells.smk"
@@ -25,6 +26,7 @@ rule all:
         rules.plot_barcode_overlap.output,
         rules.plot_check_normalization.output,
         rules.plot_basic_qc_violin.output,
+        rules.plot_overview_umap.output,
         rules.plot_genotype_facetted_umap.output,
         rules.plot_germ_and_somatic_pca.output,
         rules.plot_reprocessed_germ_cell_pca.output,
@@ -33,8 +35,10 @@ rule all:
         rules.plot_tex14_umap.output,
         rules.plot_tex14_violin_germ_clusters.output,
         rules.plot_tex14_violin_all_cells.output,
+        rules.plot_lymphoid_marker_genes_violin.output,
         rules.plot_preL_violin.output,
         rules.plot_preL_marker_pca.output,
+        rules.plot_cell_cycle_assignment.output,
         rules.plot_genotype_proportions_per_germ_cluster_bar.output,
         rules.plot_genotype_proportions_per_celltype_bar.output,
         rules.plot_genotype_proportions_per_germ_soma_bar.output,

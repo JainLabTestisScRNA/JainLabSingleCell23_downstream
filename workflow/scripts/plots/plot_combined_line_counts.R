@@ -14,12 +14,20 @@ sce2 <- aggregateAcrossFeatures(sce,ids=rep("LINE",nrow(sce)))
 
 sce2 <- logNormCounts(sce2)
 
-g <- plotExpression(sce2,features="LINE",x="label",other_fields = "genotype") +
-  facet_wrap(~genotype)
+g <- makePerCellDF(sce2,features="LINE") |>
+  ggplot(aes(label,LINE,fill=genotype)) +
+  #geom_boxplot() +
+  geom_violin(scale = "width") +
+  stat_summary(geom="point",color="red",position = position_dodge(width=0.8)) +
+  ylab("LINE expression\n(summed + normalized)") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle=45,hjust=1)) +
+  scale_fill_grey()
 
-ggsave(snakemake@output$pdf, g)
+ggsave(snakemake@output$pdf, g, height = 4)
 
 write_tsv(g$data,snakemake@output$tsv)
+
 
 
 #makePerCellDF(sce,features="L1MdA_I_5end") |>

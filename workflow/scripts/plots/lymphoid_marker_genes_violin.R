@@ -19,7 +19,7 @@ head(ordered[,c("gene_name","mean.AUC")],20) |> as_tibble() |> print(n=Inf)
 
 
 g <- plotExpression(sce,x="celltype",other_fields = "celltype",
-                    features = c("B2m","Ccl5","Cd52","Cd74","Apoe","Trbc2"),
+                    features = c("Id2","Il7r","Rora","Thy1","Ccl5","Cd52"),
                     swap_rownames = "gene_name",scales = "free",one_facet = F) +
   theme(axis.text.x=element_text(angle=45,hjust=1)) +
   facet_wrap(~Feature,ncol=1,scales="free")
@@ -29,6 +29,6 @@ g
 
 
 
-ggsave(snakemake@output$pdf,g)
+ggsave(snakemake@output$pdf,g,height = 12)
 
 g$data |> write_tsv(snakemake@output$tsv)
