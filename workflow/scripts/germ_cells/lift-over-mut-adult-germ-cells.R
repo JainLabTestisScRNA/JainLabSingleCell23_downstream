@@ -17,6 +17,9 @@ mut_fl <-  snakemake@input$mut
 sce.wt <- read_rds(wt_fl)
 sce.mut <- read_rds(mut_fl)
 
+# ------------------------------------------------------------------------------
+# get likely cell type assignments for muts
+# ------------------------------------------------------------------------------
 library(SingleR)
 
 sr <- SingleR(sce.mut,ref=sce.wt,labels = sce.wt$label)
@@ -67,7 +70,7 @@ set.seed(2)
 mnn.out <- fastMNN(sce, k=length(unique(sce$label)),
                      batch = sce$batch, 
                      subset.row=chosen, # no tes involved
-                     correct.all = T, 
+                     correct.all = T, get.variance = T,
                      BSPARAM=BiocSingular::RandomParam(deferred = T))
   
 reducedDims(sce) <- reducedDims(mnn.out)
@@ -101,7 +104,7 @@ plotReducedDim(sce, "corrected",ncomponents = c(1,2),colour_by=I(common.pseudo),
 #            mapping=aes(x=dim1, y=dim2, group=edge))
 
 write_rds(sce,snakemake@output$rds)
-
+rowData(mnn.out) |> as_tibble(rownames="feature") |> write_rds(snakemake@output$feature_rotation)
 
 
 # ------------------------------------------------------------------------------

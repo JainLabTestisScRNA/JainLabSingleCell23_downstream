@@ -9,6 +9,7 @@ include: "rules/cellranger-import.smk"
 include: "rules/single-cell-preproc.smk"
 include: "rules/germ_cells.smk"
 include: "rules/differential_expression.smk"
+include: "rules/enrichment.smk"
 include: "rules/plots.smk"
 
 rule all:
@@ -18,6 +19,7 @@ rule all:
         "results/integration/adult.sce.integrated.rds",
         "results/integration/adult.sce.integrated.clustered.rds",
         "results/integration/adult.sce.integrated.clustered.celltypes.rds",
+        rules.gsea_prerank.output,
         #"results/germ_cells/adult.sce.integrated.clustered.celltypes.germ_cell.rds",
         #"results/germ_cells/adult.sce.integrated.clustered.celltypes.germ_cell.reprocessed.rds",
         #"results/differential_expression/adult.tbl.pseudobulk.de.tsv.gz",

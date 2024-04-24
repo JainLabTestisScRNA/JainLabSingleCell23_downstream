@@ -39,5 +39,6 @@ rule lift_over_mut_adult_germ_cells:
         mut = "results/germ_cells/adult.sce.germ_cell.mut.rds",
     output:
         rds = "results/germ_cells/adult.sce.germ_cell.both_genotypes.subclustered.reintegrated.rds",
+        feature_rotation = "results/germ_cells/adult.sce.germ_cell.both_genotypes.subclustered.reintegrated.feature_rotation.rds",
     script:
         "../scripts/germ_cells/lift-over-mut-adult-germ-cells.R"
