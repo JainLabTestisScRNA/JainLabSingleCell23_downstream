@@ -22,8 +22,9 @@ ranks <- split(de,de$celltype) |> map(~{dplyr::select(.x,gene_name,logFC)}) |> m
 
 gmt <- gmtPathways(ifelse(exists("snakemake"),snakemake@input$msigdb,"data/m5.all.v2023.2.Mm.symbols.gmt"))
 
-gseaRes <- map(ranks, ~fgsea(gmt,stats = .x, minSize = 10, maxSize = 300,nproc=1))
+gseaRes <- map(ranks, ~fgsea(gmt,stats = .x, minSize = 10, maxSize = 300,nproc=1,eps=0))
 
 
-write_rds(gseaRes, snakemake@output$rds)
+write_rds(gseaRes, snakemake@output$fgsea)
+write_rds(ranks, snakemake@output$ranks)
 

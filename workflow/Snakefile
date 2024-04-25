@@ -51,5 +51,6 @@ rule all:
         rules.plot_de_te_heatmap_broad.output,
         rules.plot_de_te_heatmap_gc.output,
         rules.plot_gc_fdr_jitter.output,
+        rules.plot_gc_enrichment_overview.output,
         rules.plot_combined_line_counts.output,
         rules.plot_heatmap_wt_te_expression.output,

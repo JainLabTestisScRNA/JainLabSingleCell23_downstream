@@ -296,6 +296,23 @@ rule plot_gc_fdr_jitter:
         "../scripts/plots/gc_fdr_jitter.R"
 
 # -----------------------------------------------------------------------------
+# enrichment plots
+# -----------------------------------------------------------------------------
+
+rule plot_gc_enrichment_overview:
+    input:
+        gsea = rules.gsea_prerank.output.fgsea,
+        ranks = rules.gsea_prerank.output.ranks,
+        msigdb = config.get("msigdb"),
+    output:
+        pdf = 'results/plots/enrichment/gc_enrichment_overview.pdf',
+        xlsx = 'results/plots/enrichment/gc_enrichment_overview.xlsx'
+    script:
+        "../scripts/plots/plot_gc_enrichment_overview.R"
+
+
+
+# -----------------------------------------------------------------------------
 # te expression
 # -----------------------------------------------------------------------------
 
