@@ -316,15 +316,15 @@ rule plot_gc_enrichment_overview:
 # te expression
 # -----------------------------------------------------------------------------
 
-rule plot_heatmap_wt_te_expression:
+rule plot_heatmap_te_expression_pattern:
     input:
         sce = rules.lift_over_mut_adult_germ_cells.output.rds,
         classifications = config.get("dfam_te_classifications"),
     output:
-        pdf = 'results/plots/heatmap_wt_te_expression/heatmap_wt_te_expression.pdf',
-        tsv = 'results/plots/heatmap_wt_te_expression/heatmap_wt_te_expression.tsv.gz'
+        pdf = 'results/plots/heatmap_te_expression_pattern/heatmap_te_expression_pattern.pdf',
+        xlsx = 'results/plots/heatmap_te_expression_pattern/heatmap_te_expression_pattern.xlsx'
     script:
-        "../scripts/plots/heatmap_wt_te_expression.R"
+        "../scripts/plots/heatmap_te_expression_pattern.R"
 
 rule plot_combined_line_counts:
     input:
