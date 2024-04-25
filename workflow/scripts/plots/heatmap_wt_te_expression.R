@@ -3,6 +3,10 @@ library(scater)
 library(scran)
 library(scuttle)
 
+library(RColorBrewer)
+coul <- brewer.pal(11, "PiYG") 
+coul <- colorRampPalette(coul)(100)
+
 sce <- read_rds(ifelse(exists("snakemake"),
                  snakemake@input$sce,
                  "results/germ_cells/adult.sce.germ_cell.both_genotypes.subclustered.reintegrated.rds"))
@@ -29,8 +33,8 @@ g <- plotHeatmap(sce2,
             features=rownames(sce2),
             center = T,
             scale = T,border_color=NA,
-            order_columns_by = c("label","pseudotime"),
-            zlim = c(-3,3),
+            order_columns_by = c("label"),
+            zlim = c(-3,3),color = rev(coul),
             color_rows_by = "type",
             show_rownames=F)
 

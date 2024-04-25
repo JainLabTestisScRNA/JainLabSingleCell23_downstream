@@ -2,6 +2,10 @@ library(tidyverse)
 library(scater)
 library(scran)
 library(scuttle)
+library(RColorBrewer)
+coul <- brewer.pal(11, "PiYG") 
+coul <- colorRampPalette(coul)(100)
+
 
 theme_set(theme_classic())
 
@@ -69,8 +73,8 @@ g1 <- fc |>
   ggplot(aes(feature,celltype,fill=logFC)) +
   geom_tile() +
   facet_grid(.~classification,scales="free",space = "free") +
-  scale_fill_gradient2(breaks=scales::pretty_breaks(n=4)(-max(abs(fc$logFC),na.rm = T):max(abs(fc$logFC),na.rm = T)),limits=c(-max(abs(fc$logFC),na.rm = T),max(abs(fc$logFC),na.rm = T)),low = "blue",high="red") +
-  theme(axis.text.x = element_text(angle=45,hjust=1))
+  theme(axis.text.x = element_text(angle=45,hjust=1)) +
+  scale_fill_distiller(type="div",palette = "PiYG")
 
 ggsave(snakemake@output$pdf_foldchange,g1,height = 4,width = snakemake@params$width)
 
@@ -82,7 +86,7 @@ g2 <- fc |>
   ggplot(aes(feature,celltype,fill=-log10(FDR))) +
   geom_tile() +
   facet_grid(.~classification,scales="free",space = "free") +
-  scale_fill_gradient(low = "white",high="darkgreen") +
+  scale_fill_distiller(type="div",palette = "PiYG") +
   theme(axis.text.x = element_text(angle=45,hjust=1))
 
 ggsave(snakemake@output$pdf_fdr,g2,height = 4,width = snakemake@params$width)

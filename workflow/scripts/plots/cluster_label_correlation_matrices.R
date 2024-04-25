@@ -3,14 +3,18 @@ library(scran)
 library(scuttle)
 library(tidyverse)
 library(corrr)
-
+library(RColorBrewer)
 theme_set(theme_classic())
 
-fl <- ifelse(exists("snakemake"),snakemake@input$sce,"results/germ_cells/adult.sce.integrated.clustered.celltypes.germ_cell.reprocessed.rds")
+fl <- ifelse(exists("snakemake"),snakemake@input$sce,"results/germ_cells/adult.sce.germ_cell.both_genotypes.subclustered.reintegrated.rds")
 sce <- read_rds(fl)
 
 
 #goi <- readxl::read_xlsx("data/green2018_supp3.xlsx",skip = 5) |> pull(gene)
+
+
+coul <- brewer.pal(11, "PiYG") 
+coul <- colorRampPalette(coul)(100)
 
 # ------------------------------------------------------------------------------
 # create pseudobulk for labels, not considering genotype
@@ -49,7 +53,7 @@ c_df |>
   mutate(term = fct_reorder(term,as.integer(str_extract(term,"\\d+")))) |>
   arrange(term) |>
   column_to_rownames("term") |>
-  pheatmap::pheatmap(cluster_cols = F,cluster_rows = F)
+  pheatmap::pheatmap(cluster_cols = F,cluster_rows = F,color = coul)
 dev.off()
 
 # plot green et al vs green et al
@@ -61,7 +65,7 @@ c_df |>
   mutate(term = fct_reorder(term,as.integer(str_extract(term,"\\d+")))) |>
   arrange(term) |>
   column_to_rownames("term") |>
-  pheatmap::pheatmap(cluster_cols = F,cluster_rows = F)
+  pheatmap::pheatmap(cluster_cols = F,cluster_rows = F,color = coul)
 dev.off()
 
 
@@ -75,7 +79,7 @@ x <- c_df |>
   column_to_rownames("term")
 x <- x[,rownames(x)]
 
-pheatmap::pheatmap(x,cluster_cols = F,cluster_rows = F)
+pheatmap::pheatmap(x,cluster_cols = F,cluster_rows = F,color = coul)
 dev.off()
 
 # ------------------------------------------------------------------------------
@@ -90,7 +94,7 @@ c_df |>
   mutate(term = fct_reorder(term,as.integer(str_extract(term,"\\d+")))) |>
   arrange(term) |>
   column_to_rownames("term") |>
-  pheatmap::pheatmap(cluster_cols = F,cluster_rows = F)
+  pheatmap::pheatmap(cluster_cols = F,cluster_rows = F,color = coul)
 dev.off()
 
 # plot us vs green et al
@@ -101,7 +105,7 @@ c_df |>
   mutate(term = fct_reorder(term,as.integer(str_extract(term,"\\d+")))) |>
   arrange(term) |>
   column_to_rownames("term") |>
-  pheatmap::pheatmap(cluster_cols = F,cluster_rows = F)
+  pheatmap::pheatmap(cluster_cols = F,cluster_rows = F,color = coul)
 dev.off()
 
 
@@ -114,7 +118,7 @@ x <- c_df |>
   arrange(term) |>
   column_to_rownames("term")
 
-pheatmap::pheatmap(x[,order(as.integer(str_extract(colnames(x),"\\d+")))],cluster_cols = F,cluster_rows = F)
+pheatmap::pheatmap(x[,order(as.integer(str_extract(colnames(x),"\\d+")))],cluster_cols = F,cluster_rows = F,color = coul)
 dev.off()
 
 pdf(snakemake@output$wt_vs_wt)
@@ -124,7 +128,7 @@ x <- c_df |>
   mutate(term = fct_reorder(term,as.integer(str_extract(term,"\\d+")))) |>
   arrange(term) |>
   column_to_rownames("term")
-pheatmap::pheatmap(x[,order(as.integer(str_extract(colnames(x),"\\d+")))],cluster_cols = F,cluster_rows = F)
+pheatmap::pheatmap(x[,order(as.integer(str_extract(colnames(x),"\\d+")))],cluster_cols = F,cluster_rows = F,color = coul)
 dev.off()
 
 pdf(snakemake@output$mut_vs_mut)
@@ -135,5 +139,5 @@ x <- c_df |>
   mutate(term = fct_reorder(term,as.integer(str_extract(term,"\\d+")))) |>
   arrange(term) |>
   column_to_rownames("term")
-pheatmap::pheatmap(x[,order(as.integer(str_extract(colnames(x),"\\d+")))],cluster_cols = F,cluster_rows = F)
+pheatmap::pheatmap(x[,order(as.integer(str_extract(colnames(x),"\\d+")))],cluster_cols = F,cluster_rows = F,color = coul)
 dev.off()
