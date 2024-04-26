@@ -23,22 +23,35 @@ if ("Spermatogonia" %in% de$celltype) {
 de <- de |>
   mutate(celltype = fct_relevel(as.character(celltype),celltype_ord))
 
+logcpmlims <- c(min(de$logCPM),max(de$logCPM))
+logfclims <- c(-max(abs(de$logFC)),max(abs(de$logFC)))
+logfdrlims <- c(0,max(-log10(de$FDR)))
+
+
 plot_ma <- function(x) {
   arrange(x,-str_detect(feature,"ENSMUSG")) |>
     ggplot(aes(logCPM,logFC)) +
-    geom_point(data=\(x)filter(x,FDR>0.05),color="lightgray",size=rel(0.5)) +
-    geom_point(data=\(x)filter(x,FDR<=0.05),color="darkgray",size=rel(0.5)) +
-    geom_point(data=\(x)filter(x,feat.type=="TE"&FDR <0.05),size=rel(2),shape=21,color="red",fill=NA) +
-    ggrepel::geom_text_repel(data = \(x) filter(x,str_detect(feature,"L1MdA_I_")),aes(label=feature),min.segment.length = 0.1) +
+    geom_point(data=\(x)filter(x,feat.type!="TE"&FDR >0.05),color="darkgray",size=rel(0.25)) +
+    geom_point(data=\(x)filter(x,feat.type!="TE"&FDR <=0.05),color="gray48",size=rel(0.25)) +
+    geom_point(data=\(x)filter(x,feat.type=="TE"&FDR >0.05),color="firebrick1",size=rel(0.25)) +    
+    geom_point(data=\(x)filter(x,feat.type=="TE"&FDR <=0.05),color="red",size=rel(0.5)) +
+    ggrepel::geom_text_repel(data = \(x) filter(x,str_detect(feature,"L1MdA_I_")),
+                             aes(label=feature),seed = 2,
+                             force = 1000,
+                             nudge_y = 0.5,nudge_x = 0.5,
+                             box.padding = 2,
+                             min.segment.length = unit(0, 'lines'),
+                             color="red",fontface="bold") +
     facet_wrap(~celltype,ncol=4) +
     geom_hline(yintercept=0,linetype="dotted") +
     theme(aspect.ratio = 0.5) +
-    ylab("logFC (MUT/WT)")
+    ylab("logFC (MUT/WT)") +
+    coord_cartesian(xlim=logcpmlims,ylim=logfclims)
 }
 
 
 
-pdf(snakemake@output$ma)
+pdf(snakemake@output$ma,height = 3,width = 5)
 
 split(de,de$celltype) |>
   map(plot_ma)
@@ -48,18 +61,24 @@ dev.off()
 plot_volc <-  function(x) {
     arrange(x,-str_detect(feature,"ENSMUSG")) |>
     ggplot(aes(logFC,-log10(FDR),color=feat.type)) +
-    geom_point(data=\(x)filter(x,FDR>0.05),color="lightgray",size=rel(0.5)) +
-    geom_point(data=\(x)filter(x,FDR<=0.05),color="darkgray",size=rel(0.5)) +
-    geom_point(data=\(x)filter(x,feat.type=="TE"&FDR <0.05),size=rel(2),shape=21,color="red",fill=NA) +
-    ggrepel::geom_text_repel(data = \(x) filter(x,str_detect(feature,"L1MdA_I_")),aes(label=feature),min.segment.length = 0.1) +
+    geom_point(data=\(x)filter(x,feat.type!="TE"&FDR >0.05),color="darkgray",size=rel(0.25)) +
+    geom_point(data=\(x)filter(x,feat.type!="TE"&FDR <=0.05),color="gray48",size=rel(0.25)) +
+    geom_point(data=\(x)filter(x,feat.type=="TE"&FDR >0.05),color="firebrick1",size=rel(0.25)) +    
+    geom_point(data=\(x)filter(x,feat.type=="TE"&FDR <=0.05),color="red",size=rel(0.5)) +
+    ggrepel::geom_text_repel(data = \(x) filter(x,str_detect(feature,"L1MdA_I_")),seed = 2,
+                             aes(label=feature),
+                             force = 100,
+                             nudge_y = 0.5,nudge_x = 0.5,
+                             box.padding = 1,
+                             min.segment.length = unit(0, 'lines'),
+                             color="red",fontface="bold") +
     facet_wrap(~celltype,ncol=1) +
     geom_hline(yintercept=-log10(0.05),linetype="dotted") +
-    theme(aspect.ratio = 0.5) +
-    scale_color_manual(values = c(gene="darkgray","TE"="red")) +
-    xlab("logFC (MUT/WT)")
+    xlab("logFC (MUT/WT)") +
+    coord_cartesian(xlim=logfclims,ylim=logfdrlims)
 }
 
-pdf(snakemake@output$volcano)
+pdf(snakemake@output$volcano,width = 4,height = 4)
 
 split(de,de$celltype) |>
   map(plot_volc)
