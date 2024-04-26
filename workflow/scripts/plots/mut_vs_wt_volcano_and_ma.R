@@ -1,3 +1,6 @@
+Sys.setenv(R_PROFILE=".Rprofile")
+source(Sys.getenv("R_PROFILE"))
+
 library(tidyverse)
 
 theme_set(theme_classic())
