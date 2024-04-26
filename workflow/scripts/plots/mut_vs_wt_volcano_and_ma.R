@@ -24,17 +24,25 @@ de <- de |>
   mutate(celltype = fct_relevel(as.character(celltype),celltype_ord))
 
 logcpmlims <- c(min(de$logCPM),max(de$logCPM))
-logfclims <- c(-max(abs(de$logFC)),max(abs(de$logFC)))
-logfdrlims <- c(0,max(-log10(de$FDR)))
+#logfclims <- c(-max(abs(de$logFC)),max(abs(de$logFC)))
+logfclims <- c(-3,3)
+logfdrlims <- c(0,7)
 
 
 plot_ma <- function(x) {
   arrange(x,-str_detect(feature,"ENSMUSG")) |>
+    mutate(oob=abs(logCPM) > logcpmlims[2] | abs(logFC) > logfclims[2]) |>
     ggplot(aes(logCPM,logFC)) +
-    geom_point(data=\(x)filter(x,feat.type!="TE"&FDR >0.05),color="darkgray",size=rel(0.25)) +
-    geom_point(data=\(x)filter(x,feat.type!="TE"&FDR <=0.05),color="gray48",size=rel(0.25)) +
-    geom_point(data=\(x)filter(x,feat.type=="TE"&FDR >0.05),color="firebrick1",size=rel(0.25)) +    
-    geom_point(data=\(x)filter(x,feat.type=="TE"&FDR <=0.05),color="red",size=rel(0.5)) +
+    geom_point(data=\(x)filter(x,feat.type!="TE"&FDR >0.05 &!oob),color="gray",size=rel(0.25)) +
+    geom_point(data=\(x)filter(x,feat.type!="TE"&FDR <=0.05&!oob),color="gray48",size=rel(0.25)) +
+    geom_point(data=\(x)filter(x,feat.type=="TE"&FDR >0.05&!oob),color="firebrick1",size=rel(0.25)) +    
+    geom_point(data=\(x)filter(x,feat.type=="TE"&FDR <=0.05&!oob),color="red",size=rel(0.5)) +
+    
+    geom_point(data=\(x)filter(x,feat.type!="TE"&FDR >0.05 &oob),color="gray",size=rel(1.25),shape=15) +
+    geom_point(data=\(x)filter(x,feat.type!="TE"&FDR <=0.05&oob),color="gray48",size=rel(1.25),shape=15) +
+    geom_point(data=\(x)filter(x,feat.type=="TE"&FDR >0.05&oob),color="firebrick1",size=rel(1.25),shape=15) +    
+    geom_point(data=\(x)filter(x,feat.type=="TE"&FDR <=0.05&oob),color="red",size=rel(1.25),shape=15) +
+    
     ggrepel::geom_text_repel(data = \(x) filter(x,str_detect(feature,"L1MdA_I_")),
                              aes(label=feature),seed = 2,
                              force = 1000,
@@ -46,7 +54,9 @@ plot_ma <- function(x) {
     geom_hline(yintercept=0,linetype="dotted") +
     theme(aspect.ratio = 0.5) +
     ylab("logFC (MUT/WT)") +
-    coord_cartesian(xlim=logcpmlims,ylim=logfclims)
+    #coord_cartesian(xlim=logcpmlims,ylim=logfclims) +
+    scale_y_continuous(oob=scales::squish,limits = logfclims) +
+    scale_x_continuous(oob=scales::squish,limits = logcpmlims) 
 }
 
 
@@ -60,11 +70,18 @@ dev.off()
 
 plot_volc <-  function(x) {
     arrange(x,-str_detect(feature,"ENSMUSG")) |>
-    ggplot(aes(logFC,-log10(FDR),color=feat.type)) +
-    geom_point(data=\(x)filter(x,feat.type!="TE"&FDR >0.05),color="darkgray",size=rel(0.25)) +
-    geom_point(data=\(x)filter(x,feat.type!="TE"&FDR <=0.05),color="gray48",size=rel(0.25)) +
-    geom_point(data=\(x)filter(x,feat.type=="TE"&FDR >0.05),color="firebrick1",size=rel(0.25)) +    
-    geom_point(data=\(x)filter(x,feat.type=="TE"&FDR <=0.05),color="red",size=rel(0.5)) +
+    mutate(oob=abs(-log10(FDR)) > logfdrlims[2] | abs(logFC) > logfclims[2]) |>
+    ggplot(aes(logFC,-log10(FDR))) +
+    geom_point(data=\(x)filter(x,feat.type!="TE"&FDR >0.05 &!oob),color="gray",size=rel(0.25)) +
+    geom_point(data=\(x)filter(x,feat.type!="TE"&FDR <=0.05&!oob),color="gray48",size=rel(0.25)) +
+    geom_point(data=\(x)filter(x,feat.type=="TE"&FDR >0.05&!oob),color="firebrick1",size=rel(0.25)) +    
+    geom_point(data=\(x)filter(x,feat.type=="TE"&FDR <=0.05&!oob),color="red",size=rel(0.5)) +
+    
+    geom_point(data=\(x)filter(x,feat.type!="TE"&FDR >0.05 &oob),color="gray",size=rel(1.25),shape=15) +
+    geom_point(data=\(x)filter(x,feat.type!="TE"&FDR <=0.05&oob),color="gray48",size=rel(1.25),shape=15) +
+    geom_point(data=\(x)filter(x,feat.type=="TE"&FDR >0.05&oob),color="firebrick1",size=rel(1.25),shape=15) +    
+    geom_point(data=\(x)filter(x,feat.type=="TE"&FDR <=0.05&oob),color="red",size=rel(1.25),shape=15) +
+    
     ggrepel::geom_text_repel(data = \(x) filter(x,str_detect(feature,"L1MdA_I_")),seed = 2,
                              aes(label=feature),
                              force = 100,
@@ -75,7 +92,8 @@ plot_volc <-  function(x) {
     facet_wrap(~celltype,ncol=1) +
     geom_hline(yintercept=-log10(0.05),linetype="dotted") +
     xlab("logFC (MUT/WT)") +
-    coord_cartesian(xlim=logfclims,ylim=logfdrlims)
+    scale_y_continuous(oob=scales::squish,limits = logfdrlims) +
+    scale_x_continuous(oob=scales::squish,limits = logfclims) 
 }
 
 pdf(snakemake@output$volcano,width = 4,height = 4)
