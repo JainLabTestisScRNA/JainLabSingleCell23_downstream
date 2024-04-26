@@ -42,3 +42,11 @@ rule lift_over_mut_adult_germ_cells:
         feature_rotation = "results/germ_cells/adult.sce.germ_cell.both_genotypes.subclustered.reintegrated.feature_rotation.rds",
     script:
         "../scripts/germ_cells/lift-over-mut-adult-germ-cells.R"
+
+rule find_germ_cell_markers:
+    input:
+        sce = rules.reintegrate_wt_adult_germ_cells.output.rds,
+    output:
+        tsv = "results/germ_cells/adult.sce.germ_cell.wt.subclustered.reintegrated.markers.tsv.gz",
+    script:
+        "../scripts/germ_cells/get_gc_markers.R"

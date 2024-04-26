@@ -310,7 +310,15 @@ rule plot_gc_enrichment_overview:
     script:
         "../scripts/plots/plot_gc_enrichment_overview.R"
 
-
+rule plot_gc_markers:
+    input:
+        sce = rules.lift_over_mut_adult_germ_cells.output.rds,
+        tsv = rules.find_germ_cell_markers.output.tsv,
+    output:
+        pdf = 'results/plots/enrichment/gc_markers.pdf',
+        tsv = 'results/plots/enrichment/gc_markers.tsv.gz'
+    script:
+        "../scripts/plots/plot_gc_markers.R"
 
 # -----------------------------------------------------------------------------
 # te expression
