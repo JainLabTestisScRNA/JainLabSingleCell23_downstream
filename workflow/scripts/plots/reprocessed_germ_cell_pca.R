@@ -12,26 +12,24 @@ fl <- ifelse(exists("snakemake"),snakemake@input$sce,"results/germ_cells/adult.s
 sce <- read_rds(fl)
 
 
-g12 <- plotReducedDim(sce,"corrected",
+g12 <- plotReducedDim(sce,"corrected",point_size=0.5,
                      ncomponents = c(1,2),
-                     colour_by = "label",swap_rownames = "gene_name",text_by = "label") +
+                     colour_by = "label",text_by = "label") +
   coord_fixed()
 
-g13 <- plotReducedDim(sce,"corrected",
+g13 <- plotReducedDim(sce,"corrected",point_size=0.5,
                       ncomponents = c(1,3),
-                      colour_by = "label",swap_rownames = "gene_name",text_by = "label") +
+                      colour_by = "label",text_by = "label") +
   coord_fixed()
 
 
 g12_gt <- plotReducedDim(sce,"corrected",other_fields = "genotype",
-                      ncomponents = c(1,2),
-                      colour_by = "label",swap_rownames = "gene_name",text_by = "label") +
+                      ncomponents = c(1,2),point_size=0.5) +
   facet_wrap(~genotype) +
   coord_fixed() 
 
 g13_gt <- plotReducedDim(sce,"corrected", other_fields = "genotype",
-                      ncomponents = c(1,3),
-                      colour_by = "label",swap_rownames = "gene_name",text_by = "label") +
+                      ncomponents = c(1,3),point_size=0.5) +
   facet_wrap(~genotype) +
   coord_fixed()
 
