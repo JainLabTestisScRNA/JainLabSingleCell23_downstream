@@ -6,9 +6,13 @@ library(scater)
 library(scran)
 library(scuttle)
 
-sce <- read_rds(ifelse(exists("snakemake"),snakemake@input$sce,
-                       "results/integration/adult.sce.integrated.clustered.celltypes.rds"))
+x_by <- "label"
+x_by <- snakemake@params$x
 
+sce <- read_rds(ifelse(exists("snakemake"),snakemake@input$sce,
+                       "results/germ_cells/adult.sce.germ_cell.both_genotypes.subclustered.reintegrated.rds"))
+
+sce$celltype <- colData(sce)[,x_by]
 
 g <- makePerCellDF(sce) |>
   as_tibble(rownames="cell") |>

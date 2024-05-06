@@ -29,6 +29,7 @@ rule all:
         rules.plot_barcode_overlap.output,
         rules.plot_check_normalization.output,
         rules.plot_basic_qc_violin.output,
+        rules.plot_basic_qc_violin_germ_cells.output,
         rules.plot_overview_umap.output,
         rules.plot_genotype_facetted_umap.output,
         rules.plot_germ_and_somatic_pca.output,

@@ -22,6 +22,19 @@ rule plot_basic_qc_violin:
     output:
         tsv = 'results/plots/basic_qc_violin/basic_qc_violin.tsv.gz',
         pdf = 'results/plots/basic_qc_violin/basic_qc_violin.pdf'
+    params:
+        x = 'celltype'
+    script:
+        "../scripts/plots/basic_qc_violin.R"
+
+rule plot_basic_qc_violin_germ_cells:
+    input:
+        sce = rules.lift_over_mut_adult_germ_cells.output.rds,
+    output:
+        tsv = 'results/plots/basic_qc_violin/basic_qc_violin.germ_cells.tsv.gz',
+        pdf = 'results/plots/basic_qc_violin/basic_qc_violin.germ_cells.pdf'
+    params:
+        x = 'label'
     script:
         "../scripts/plots/basic_qc_violin.R"
 
