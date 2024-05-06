@@ -210,6 +210,7 @@ rule plot_genotype_proportions_per_germ_soma_bar:
 rule plot_celltype_mut_vs_wt_volcano_and_ma:
     input:
         tsv = rules.adult_cmo_de.output.tsv,
+        sce = rules.find_celltypes_adult_cmo.output.rds,
     output:
         volcano = 'results/plots/mut_vs_wt_volcanos_and_ma/celltype_mut_vs_wt_volcano.pdf',
         ma = 'results/plots/mut_vs_wt_volcanos_and_ma/celltype_mut_vs_wt_ma.pdf',
@@ -221,6 +222,7 @@ rule plot_celltype_mut_vs_wt_volcano_and_ma:
 rule plot_germ_cell_mut_vs_wt_volcano_and_ma:
     input:
         tsv = rules.adult_cmo_germ_cell_de.output.tsv,
+        sce = rules.lift_over_mut_adult_germ_cells.output.rds,
     output:
         volcano = 'results/plots/mut_vs_wt_volcanos_and_ma/germ_cell_mut_vs_wt_volcano.pdf',
         ma = 'results/plots/mut_vs_wt_volcanos_and_ma/germ_cell_mut_vs_wt_ma.pdf',

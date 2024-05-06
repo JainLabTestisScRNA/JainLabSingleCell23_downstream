@@ -2,14 +2,30 @@ Sys.setenv(R_PROFILE=".Rprofile")
 source(Sys.getenv("R_PROFILE"))
 
 library(tidyverse)
+library(scuttle)
+library(scran)
+library(SingleCellExperiment)
 
 theme_set(theme_classic())
+
+sce_fl <- ifelse(exists("snakemake"),
+             snakemake@input$sce,
+             "results/differential_expression/adult.sce.germ_cell.reprocessed.pseudobulk.rds")
+
+sce <- read_rds(sce_fl)
+
+lkup <- rowData(sce)[,c("gene_name"),drop=F] |>
+  as_tibble(rownames="feature")
+
 
 fl <- ifelse(exists("snakemake"),
              snakemake@input$tsv,
              "results/differential_expression/adult.tbl.germ_cell.reprocessed.de.tsv.gz")
 
 de <- read_tsv(fl)
+
+de <- de |> left_join(lkup, by="feature") |>
+  dplyr::relocate(gene_name,.after=feature)
 
 de<- de |> 
   mutate(feat.type = if_else(str_detect(feature,"ENSMUSG"),"gene","TE"))
