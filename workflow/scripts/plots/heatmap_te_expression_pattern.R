@@ -32,32 +32,34 @@ sce2 <- sce2[rowSums(counts(sce2)) > 10,]
 rowData(sce2)$type <- map_chr(rownames(sce2),~{te_lkup[.x]})
 rd <- rowData(sce2)[,"type",drop=F] |> as.data.frame()
 
-# get wt and mutant mats
-mats <- c("WT","MUT") |>
-  set_names() |>
-  map(~{
-    x <- sce2[,sce2$genotype == .x]
-    colnames(x) <- make.unique(x$label)
-    mat <- logcounts(x)
-    mat <- t(scale(t(mat)))
-    #mat[order(mat[,"4/Spermatocyte"],decreasing = T),]
-    return(mat)
-  })
+assay(sce2,"scaled") <- logcounts(sce2) |> t() |> scale() |> t()
 
 
-# row ord/clustering based on WT to keep consistent
-rdend <- hclust(dist(mats$WT))
+mats <- list(WT=assay(sce2[,sce2$genotype == "WT"],"scaled"),
+             MUT=assay(sce2[,sce2$genotype == "MUT"],"scaled"))
 
-plot_heat <-  function(gt) {
-  m <- mats[[gt]][rdend$order,]
-  Heatmap(m,cluster_rows = F,cluster_columns=F,show_row_names = F,col = rev(coul),name = "Expression\n(row z-scores)",
+plot_heat <-  function(gt,feats) {
+  # row ord/clustering based on both gt
+  rdend <- hclust(dist(assay(sce2,"scaled")[feats,]))
+  m <- mats[[gt]][feats,]
+  m <- m[rdend$order,]
+  Heatmap(m,cluster_rows = F,cluster_columns=F,show_row_names = F,show_column_names = T,col = rev(coul),name = "Expression\n(row z-scores)",
           row_dend_width = unit(20, "mm"), split=factor(rd[rownames(m),"type"]),border = "black",
-          column_title=gt)
+          column_title=gt,column_labels = colnames(m))
 }
+
+plot_heat("WT",filter(tes,dfam_name %in% rownames(sce2) & classification  %in% c("LINE","LTR"))$dfam_name) +
+  plot_heat("MUT",filter(tes,dfam_name %in% rownames(sce2) & classification  %in% c("LINE","LTR"))$dfam_name)
 
 pdf(snakemake@output$pdf)
 
 plot_heat("WT") + plot_heat("MUT")
+
+plot_heat("WT",filter(tes,dfam_name %in% rownames(sce2) & classification  %in% c("LINE","LTR"))$dfam_name) +
+  plot_heat("MUT",filter(tes,dfam_name %in% rownames(sce2) & classification  %in% c("LINE","LTR"))$dfam_name)
+
+
+
 
 dev.off()
 
