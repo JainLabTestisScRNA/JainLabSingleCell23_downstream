@@ -79,6 +79,18 @@ sce <- sce[,!discard.mito.madTop]
 metadata(sce)$n_mito_discarded <- sum(discard.mito.madTop)
 metadata(sce)$n_mito_warning <- sum(sce$mito_warning)
 
+
+# ------------------------------------------------------------------------------
+# xy expression
+chromwise_genes <- rowRanges(sce) |> as_tibble() |> filter(str_detect(seqnames,"^chr") & !str_detect(seqnames,"^chrM")) |>
+  mutate(seqnames=droplevels(seqnames)) |>
+  group_by(seqnames) |>
+  summarise(genes = list(gene_id)) |>
+  deframe()
+
+
+sce <- addPerCellQCMetrics(sce,subsets=chromwise_genes)
+
 # ------------------------------------------------------------------------------
 # remove low dimension cells - very few features expressed, likely another class of dying cells
 # but either way not super informative and tends to screw up trajectory analyses later on
