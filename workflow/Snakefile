@@ -57,3 +57,5 @@ rule all:
         rules.plot_gc_markers.output,
         rules.plot_combined_line_counts.output,
         rules.plot_heatmap_te_expression_pattern.output,
+
+        rules.plot_meiosis_related_signatures.output,

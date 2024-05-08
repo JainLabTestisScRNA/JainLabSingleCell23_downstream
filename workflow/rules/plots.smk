@@ -182,6 +182,16 @@ rule plot_cell_cycle_assignment:
     script:
         "../scripts/germ_cells/cell_cycle_assignment.R"
 
+rule plot_meiosis_related_signatures:
+    input:
+        sce = rules.lift_over_mut_adult_germ_cells.output.rds,
+        msigdb = config.get("msigdb"),
+    output:
+        pdf = 'results/plots/meiosis_related_signatures/meiosis_related_signatures.pdf',
+        tsv = 'results/plots/meiosis_related_signatures/meiosis_related_signatures.tsv.gz'
+    script:
+        "../scripts/germ_cells/plot_meiosis_related_signatures.R"
+
 
 
 # -----------------------------------------------------------------------------
