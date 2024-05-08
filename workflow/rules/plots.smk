@@ -352,6 +352,7 @@ rule plot_gc_markers:
 rule plot_heatmap_te_expression_pattern:
     input:
         sce = rules.lift_over_mut_adult_germ_cells.output.rds,
+        de = rules.adult_cmo_germ_cell_de.output.tsv,
         classifications = config.get("dfam_te_classifications"),
     output:
         pdf = 'results/plots/heatmap_te_expression_pattern/heatmap_te_expression_pattern.pdf',
