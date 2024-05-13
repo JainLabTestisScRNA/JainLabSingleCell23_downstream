@@ -41,7 +41,7 @@ plot_signature <- function(x) {
   
   ggplot(d,aes_string("label",x,fill="genotype")) +
     geom_boxplot() +
-    theme(axis.text.x = element_text(angle=45,hjust=1))
+    theme(axis.text.x = element_text(angle=45,hjust=1),axis.title.y = element_text(size=9))
 }
 
 pdf(snakemake@output$pdf,height = 5, width = 6)
