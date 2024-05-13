@@ -25,10 +25,11 @@ plot_vs_chrX <- function(chr="chrY") {
     geom_point(size=rel(0.5)) +
     facet_wrap(genotype~label,nrow=2,scales="free") +
     xlab("chrX genes detected") +
-    ylab(sprintf("%s genes detected",chr))
+    ylab(sprintf("%s genes detected",chr)) +
+    theme(aspect.ratio = 1)
 }
 
-pdf(snakemake@output$pdf)
+pdf(snakemake@output$pdf, width = 8.5, height = 6)
 rowRanges(sce) |>
   as_tibble() |>
   dplyr::select(seqnames) |>
