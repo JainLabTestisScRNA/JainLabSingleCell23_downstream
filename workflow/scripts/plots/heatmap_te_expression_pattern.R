@@ -39,37 +39,46 @@ sce2 <- sce2[rowSums(counts(sce2)) > 1,]
 # include info about te types
 rowData(sce2)$type <- map_chr(rownames(sce2),~{te_lkup[.x]})
 rd <- rowData(sce2)[,"type",drop=F] |> as.data.frame()
+rd$de <- if_else(rownames(rd) %in% de_tes,"(DE)","")
+rd$lab <- sprintf("%s %s",rd$type,rd$de)
 
 assay(sce2,"scaled") <- logcounts(sce2) |> t() |> scale() |> t()
 
 colnames(sce2) <- paste(sce2$label,"_",sce2$genotype)
 
-plot_heat <-  function(feats,rn=F) {
+plot_heat <-  function(feats,rn=F,order_by_cl3=F) {
   # row ord/clustering based on both gt
   rdend <- hclust(dist(assay(sce2,"scaled")[feats,]))
   m <- assay(sce2,"scaled")[feats,]
-  m <- m[rdend$order,]
+  if (order_by_cl3) {
+    m <- m[order(m[,5],decreasing = T),]
+  } else {
+    m <- m[rdend$order,]
+  }
   Heatmap(m,cluster_rows = F,cluster_columns=F,show_row_names = rn,show_column_names = T,col = rev(coul),name = "Expression\n(row z-scores)",
-          row_dend_width = unit(20, "mm"), split=factor(rd[rownames(m),"type"]),border = "black",
+          row_dend_width = unit(20, "mm"), 
+          split=factor(rd[rownames(m),"lab"]),
+          border = "black",
           column_labels = sce2$label,column_split = sce2$genotype)
 }
 
 
 pdf(snakemake@output$pdf)
 
-h <- plot_heat()
-draw(h,column_title="Expressed TEs")
+h <- plot_heat(filter(tes,dfam_name %in% rownames(sce2) & classification  %in% c("LINE"))$dfam_name,order_by_cl3 = T)
+draw(h,column_title="LINEs")
+
+h <- plot_heat(filter(tes,dfam_name %in% rownames(sce2) & classification  %in% c("LINE"))$dfam_name)
+draw(h,column_title="LINEs")
+
+h <- plot_heat(filter(tes,dfam_name %in% rownames(sce2) & classification  %in% c("LINE","LTR"))$dfam_name,order_by_cl3 = T)
+draw(h,column_title="LINEs & LTRs")
 
 h <- plot_heat(filter(tes,dfam_name %in% rownames(sce2) & classification  %in% c("LINE","LTR"))$dfam_name)
-draw(h,column_title="Expressed LINEs & LTRs")
+draw(h,column_title="LINEs & LTRs")
 
-h <- plot_heat(de_tes,rn=F)
-draw(h,column_title="DE TEs")
 
-h <- plot_heat(filter(tes,dfam_name %in% rownames(sce2) & classification  %in% c("LINE","LTR") & dfam_name %in% de_tes)$dfam_name, rn=T)
-draw(h,column_title="DE LINEs & LTRs")
 
 dev.off()
-
 
 writexl::write_xlsx(as.data.frame(assay(sce2,"scaled")),snakemake@output$xlsx)
