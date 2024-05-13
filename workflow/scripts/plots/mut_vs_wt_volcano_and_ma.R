@@ -56,49 +56,6 @@ logcpmlims <- c(min(de$logCPM),max(de$logCPM))
 logfclims <- c(-3,3)
 logfdrlims <- c(0,7)
 
-
-# plot_ma <- function(x) {
-#   arrange(x,-str_detect(feature,"ENSMUSG")) |>
-#     mutate(oob=abs(logCPM) > logcpmlims[2] | abs(logFC) > logfclims[2]) |>
-#     ggplot(aes(logCPM,logFC)) +
-#     geom_point(data=\(x)filter(x,feat.type!="TE"&FDR >0.05 &!oob),color="gray",size=rel(0.25)) +
-#     geom_point(data=\(x)filter(x,feat.type!="TE"&FDR <=0.05&!oob),color="gray48",size=rel(0.25)) +
-#     geom_point(data=\(x)filter(x,classification=="LINE"&FDR >0.05&!oob),color="lightcoral",size=rel(0.25)) +    
-#     geom_point(data=\(x)filter(x,classification=="LINE"&FDR <=0.05&!oob),color="red",size=rel(0.5)) +
-#     geom_point(data=\(x)filter(x,classification=="LTR"&FDR >0.05&!oob),color="royalblue1",size=rel(0.25)) +    
-#     geom_point(data=\(x)filter(x,classification=="LTR"&FDR <=0.05&!oob),color="blue",size=rel(0.5)) +
-#     geom_point(data=\(x)filter(x,classification=="DNA"&FDR >0.05&!oob),color="palegreen1",size=rel(0.25)) +    
-#     geom_point(data=\(x)filter(x,classification=="DNA"&FDR <=0.05&!oob),color="darkgreen",size=rel(0.5)) +
-#     geom_point(data=\(x)filter(x,classification=="SINE"&FDR >0.05&!oob),color="goldenrod1",size=rel(0.25)) +    
-#     geom_point(data=\(x)filter(x,classification=="SINE"&FDR <=0.05&!oob),color="darkorange3",size=rel(0.5)) +
-#     
-#     geom_point(data=\(x)filter(x,feat.type!="TE"&FDR >0.05 &oob),color="black",size=rel(1.25),shape=15) +
-#     geom_point(data=\(x)filter(x,feat.type!="TE"&FDR <=0.05&oob),color="black",size=rel(1.25),shape=15) +
-#     geom_point(data=\(x)filter(x,classification=="LINE"&FDR >0.05&oob),color="lightcoral",size=rel(1.25),shape=15) +    
-#     geom_point(data=\(x)filter(x,classification=="LINE"&FDR <=0.05&oob),color="red",size=rel(1.25),shape=15) +
-#     geom_point(data=\(x)filter(x,classification=="LTR"&FDR >0.05&oob),color="royalblue1",size=rel(1.25),shape=15) +    
-#     geom_point(data=\(x)filter(x,classification=="LTR"&FDR <=0.05&oob),color="blue",size=rel(1.25),shape=15) +
-#     geom_point(data=\(x)filter(x,classification=="DNA"&FDR >0.05&oob),color="palegreen1",size=rel(1.25),shape=15) +    
-#     geom_point(data=\(x)filter(x,classification=="DNA"&FDR <=0.05&oob),color="darkgreen",size=rel(1.25),shape=15) +
-#     geom_point(data=\(x)filter(x,classification=="SINE"&FDR >0.05&oob),color="goldenrod1",size=rel(1.25),shape=15) +    
-#     geom_point(data=\(x)filter(x,classification=="SINE"&FDR <=0.05&oob),color="darkorange3",size=rel(1.25),shape=15) +
-#     
-#     ggrepel::geom_text_repel(data = \(x) filter(x,str_detect(feature,"L1MdA_I_")),
-#                              aes(label=feature),seed = 2,
-#                              force = 1000,
-#                              nudge_y = 0.5,nudge_x = 0.5,
-#                              box.padding = 2,
-#                              min.segment.length = unit(0, 'lines'),
-#                              color="red",fontface="bold") +
-#     facet_wrap(~celltype,ncol=4) +
-#     geom_hline(yintercept=0,linetype="dotted") +
-#     theme(aspect.ratio = 0.5) +
-#     ylab("logFC (MUT/WT)") +
-#     #coord_cartesian(xlim=logcpmlims,ylim=logfclims) +
-#     scale_y_continuous(oob=scales::squish,limits = logfclims) +
-#     scale_x_continuous(oob=scales::squish,limits = logcpmlims) 
-# }
-
 plot_ma <- function(x) {
   arrange(x,-str_detect(feature,"ENSMUSG")) |>
     mutate(oob=abs(logCPM) > logcpmlims[2] | abs(logFC) > logfclims[2]) |>
@@ -146,7 +103,7 @@ plot_ma <- function(x) {
 
 pdf(snakemake@output$ma,height = 3,width = 5)
 
-split(de,de$celltype)[7] |>
+split(de,de$celltype) |>
   map(plot_ma)
   
 dev.off()
@@ -194,7 +151,7 @@ plot_volc <-  function(x) {
 
 pdf(snakemake@output$volcano,width = 4,height = 4)
 
-split(de,de$celltype)[4] |>
+split(de,de$celltype) |>
   map(plot_volc)
 
 dev.off()
