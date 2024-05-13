@@ -371,3 +371,16 @@ rule plot_combined_line_counts:
         tsv = 'results/plots/combined_line_counts/combined_line_counts.tsv.gz'
     script:
         "../scripts/plots/plot_combined_line_counts.R"
+
+# -----------------------------------------------------------------------------
+# plot xy expression pattern
+# -----------------------------------------------------------------------------
+
+rule plot_xy_detected_gene_scatter:
+    input:
+        sce = rules.lift_over_mut_adult_germ_cells.output.rds,
+    output:
+        pdf = 'results/plots/xy_detected_gene_scatter/xy_detected_gene_scatter.pdf',
+        tsv = 'results/plots/xy_detected_gene_scatter/xy_detected_gene_scatter.tsv.gz'
+    script:
+        "../scripts/plots/xy_detected_gene_scatter.R"

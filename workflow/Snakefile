@@ -59,3 +59,4 @@ rule all:
         rules.plot_heatmap_te_expression_pattern.output,
 
         rules.plot_meiosis_related_signatures.output,
+        rules.plot_xy_detected_gene_scatter.output,
