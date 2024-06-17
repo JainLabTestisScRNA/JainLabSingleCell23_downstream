@@ -10,6 +10,7 @@ include: "rules/single-cell-preproc.smk"
 include: "rules/germ_cells.smk"
 include: "rules/differential_expression.smk"
 include: "rules/enrichment.smk"
+include: "rules/sharing.smk"
 include: "rules/plots.smk"
 
 rule all:
@@ -53,6 +54,9 @@ rule all:
         rules.plot_de_te_heatmap_broad.output,
         rules.plot_de_te_heatmap_gc.output,
         rules.plot_gc_fdr_jitter.output,
+        rules.plot_pairwise_lfc_comparison_gc.output,
+        rules.plot_pairwise_lfc_comparison_broad.output,
+        rules.plot_pairwise_lfc_corr_dotplot_gc.output,
         rules.plot_gc_enrichment_overview.output,
         rules.plot_gc_markers.output,
         rules.plot_combined_line_counts.output,

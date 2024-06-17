@@ -322,6 +322,34 @@ rule plot_gc_fdr_jitter:
     script:
         "../scripts/plots/gc_fdr_jitter.R"
 
+rule plot_pairwise_lfc_comparison_gc:
+    input:
+        tsv = rules.adult_cmo_germ_cell_de.output.tsv,
+    output:
+        pdf = 'results/plots/pairwise_lfc_comparison/pairwise_lfc_comparison.germ_cell.pdf',
+        tsv = 'results/plots/pairwise_lfc_comparison/pairwise_lfc_comparison.germ_cell.tsv.gz'
+    script:
+        "../scripts/plots/pairwise_lfc_comparison.R"
+
+rule plot_pairwise_lfc_comparison_broad:
+    input:
+        tsv = rules.adult_cmo_de.output.tsv,
+    output:
+        pdf = 'results/plots/pairwise_lfc_comparison/pairwise_lfc_comparison.celltype.pdf',
+        tsv = 'results/plots/pairwise_lfc_comparison/pairwise_lfc_comparison.celltype.tsv.gz'
+    script:
+        "../scripts/plots/pairwise_lfc_comparison.R"
+
+
+rule plot_pairwise_lfc_corr_dotplot_gc:
+    input:
+        tsv = rules.adult_cmo_germ_cell_de.output.tsv,
+    output:
+        pdf = 'results/plots/pairwise_lfc_corr_dotplot/pairwise_lfc_corr_dotplot.germ_cell.pdf',
+        tsv = 'results/plots/pairwise_lfc_corr_dotplot/pairwise_lfc_corr_dotplot.germ_cell.tsv.gz'
+    script:
+        "../scripts/plots/pairwise_lfc_corr_dotplot.R"
+
 # -----------------------------------------------------------------------------
 # enrichment plots
 # -----------------------------------------------------------------------------
