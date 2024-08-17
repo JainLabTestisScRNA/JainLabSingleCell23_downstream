@@ -21,7 +21,7 @@ dfam_te_classifications: data/dfam_classification.parsed.txt
 
 cell_cycle_genes: data/macosko2015_supp2.xlsx
 
-msigdb: data/m5.all.v2023.2.Mm.symbols.gmt
+msigdb: data/m5.go.bp.v2023.2.Mm.symbols.gmt
 
 gc_subclusters_k:
   Spermatogonia: 2

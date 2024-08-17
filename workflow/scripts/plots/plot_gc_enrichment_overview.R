@@ -17,8 +17,8 @@ gmt <- gmtPathways(ifelse(exists("snakemake"),snakemake@input$msigdb,"data/m5.al
 
 plot_table <-  function(comparison,n=10) {
   rnk <- ranks[[comparison]]
-  pwPos <- head(gs[[comparison]][sign(NES)==1, ][order(pval),pathway],n)
-  pwNeg <- head(gs[[comparison]][sign(NES)==-1, ][order(pval),pathway],n)
+  pwPos <- head(gs[[comparison]][sign(NES)==1 & padj < 0.05, ][order(pval),pathway],n)
+  pwNeg <- head(gs[[comparison]][sign(NES)==-1 & padj < 0.05, ][order(pval),pathway],n)
   pw<- gmt[c(pwPos,rev(pwNeg))]
   res <- gs[[comparison]] |> 
     as_tibble() |> 
@@ -37,7 +37,7 @@ dat <- res |> map(pluck,"data")
 names(dat) <- names(dat) |> str_replace("\\/",".")
 write_xlsx(dat,snakemake@output$xlsx)
 
-pdf(snakemake@output$pdf)
+pdf(snakemake@output$pdf,width = 10,height = 10)
 
 res |> map(pluck,"g")
 

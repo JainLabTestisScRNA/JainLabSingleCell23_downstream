@@ -5,6 +5,7 @@ library(tidyverse)
 library(scater)
 library(scran)
 library(scuttle)
+library(ggpubr)
 
 lines <- read_tsv(ifelse(exists("snakemake"),snakemake@input$classification,"data/dfam_classification.parsed.txt")) |>
   filter(classification == "LINE")
@@ -18,16 +19,20 @@ sce2 <- aggregateAcrossFeatures(sce,ids=rep("LINE",nrow(sce)))
 sce2 <- logNormCounts(sce2)
 
 g <- makePerCellDF(sce2,features="LINE") |>
-  ggplot(aes(label,LINE,fill=genotype)) +
+  filter(label!="8/Elongating") |>
+  ggplot(aes(genotype,LINE,fill=genotype)) +
   #geom_boxplot() +
   geom_violin(scale = "width") +
   stat_summary(geom="point",color="red",position = position_dodge(width=0.8)) +
   ylab("LINE expression\n(summed + normalized)") +
   theme_classic() +
   theme(axis.text.x = element_text(angle=45,hjust=1)) +
-  scale_fill_grey()
+  guides(fill="none") +
+  scale_fill_grey() +
+  ggpubr::stat_compare_means(ref.group = "WT",label = "p.format",size=2.5) +
+  facet_wrap(~label,nrow = 1)
 
-ggsave(snakemake@output$pdf, g, height = 4)
+ggsave(snakemake@output$pdf, g, height = 3.5,width = 9)
 
 write_tsv(g$data,snakemake@output$tsv)
 
