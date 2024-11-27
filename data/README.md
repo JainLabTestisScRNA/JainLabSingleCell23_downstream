@@ -33,3 +33,8 @@ GSE112393_MergedAdultMouseST25_12GermCellClusters_AllGeneExp.xlsx from GEO acces
 ## Classifiers based on Green et al. data
 
 See `workflow/scripts/resource_prep`.
+
+
+## Mouse go terms
+
+https://www.gsea-msigdb.org/gsea/msigdb/mouse/collections.jsp (240423)

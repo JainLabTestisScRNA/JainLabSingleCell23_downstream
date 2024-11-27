@@ -1,3 +1,6 @@
+Sys.setenv(R_PROFILE=".Rprofile")
+source(Sys.getenv("R_PROFILE"))
+
 library(tidyverse)
 
 raw <- read_delim("data/dfam_classification.txt",col_names = c("dfam_id","dfam_name","classification_long","len","classification"))

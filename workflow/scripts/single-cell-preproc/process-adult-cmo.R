@@ -1,3 +1,6 @@
+Sys.setenv(R_PROFILE=".Rprofile")
+source(Sys.getenv("R_PROFILE"))
+
 library(tidyverse)
 library(DropletUtils)
 library(scater)
@@ -75,6 +78,18 @@ sce <- sce[,!discard.mito.madTop]
 
 metadata(sce)$n_mito_discarded <- sum(discard.mito.madTop)
 metadata(sce)$n_mito_warning <- sum(sce$mito_warning)
+
+
+# ------------------------------------------------------------------------------
+# xy expression
+chromwise_genes <- rowRanges(sce) |> as_tibble() |> filter(str_detect(seqnames,"^chr") & !str_detect(seqnames,"^chrM")) |>
+  mutate(seqnames=droplevels(seqnames)) |>
+  group_by(seqnames) |>
+  summarise(genes = list(gene_id)) |>
+  deframe()
+
+
+sce <- addPerCellQCMetrics(sce,subsets=chromwise_genes)
 
 # ------------------------------------------------------------------------------
 # remove low dimension cells - very few features expressed, likely another class of dying cells

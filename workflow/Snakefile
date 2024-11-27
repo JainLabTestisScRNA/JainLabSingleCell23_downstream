@@ -4,10 +4,13 @@ wildcard_constraints:
     experiment= "|".join(x for x in config.get("cellranger_matrices").keys()),
     subset= "germ_cell",
 
+include: "rules/resource_prep.smk"
 include: "rules/cellranger-import.smk"
 include: "rules/single-cell-preproc.smk"
 include: "rules/germ_cells.smk"
 include: "rules/differential_expression.smk"
+include: "rules/enrichment.smk"
+include: "rules/sharing.smk"
 include: "rules/plots.smk"
 
 rule all:
@@ -17,12 +20,18 @@ rule all:
         "results/integration/adult.sce.integrated.rds",
         "results/integration/adult.sce.integrated.clustered.rds",
         "results/integration/adult.sce.integrated.clustered.celltypes.rds",
-        "results/germ_cells/adult.sce.integrated.clustered.celltypes.germ_cell.rds",
-        "results/germ_cells/adult.sce.integrated.clustered.celltypes.germ_cell.reprocessed.rds",
-        "results/differential_expression/adult.tbl.pseudobulk.de.tsv.gz",
-        rules.get_adult_germ_cells_cell_cycle.output,
+        rules.gsea_prerank.output,
+        rules.find_germ_cell_markers.output,
+        #"results/germ_cells/adult.sce.integrated.clustered.celltypes.germ_cell.rds",
+        #"results/germ_cells/adult.sce.integrated.clustered.celltypes.germ_cell.reprocessed.rds",
+        #"results/differential_expression/adult.tbl.pseudobulk.de.tsv.gz",
 
         # plots
+        rules.plot_barcode_overlap.output,
+        rules.plot_check_normalization.output,
+        rules.plot_basic_qc_violin.output,
+        rules.plot_basic_qc_violin_germ_cells.output,
+        rules.plot_overview_umap.output,
         rules.plot_genotype_facetted_umap.output,
         rules.plot_germ_and_somatic_pca.output,
         rules.plot_reprocessed_germ_cell_pca.output,
@@ -31,15 +40,27 @@ rule all:
         rules.plot_tex14_umap.output,
         rules.plot_tex14_violin_germ_clusters.output,
         rules.plot_tex14_violin_all_cells.output,
+        rules.plot_lymphoid_marker_genes_violin.output,
         rules.plot_preL_violin.output,
         rules.plot_preL_marker_pca.output,
-        rules.plot_germ_cell_cell_cycle_bar.output,
+        rules.plot_cell_cycle_assignment.output,
         rules.plot_genotype_proportions_per_germ_cluster_bar.output,
         rules.plot_genotype_proportions_per_celltype_bar.output,
+        rules.plot_genotype_proportions_per_germ_soma_bar.output,
         rules.plot_celltype_mut_vs_wt_volcano_and_ma.output,
         rules.plot_germ_cell_mut_vs_wt_volcano_and_ma.output,
-        rules.plot_barcode_overlap.output,
-        rules.plot_check_normalization.output,
         rules.plot_per_cell_per_sample_de_jitter_broad.output,
         rules.plot_per_cell_per_sample_de_jitter_germ_cells.output,
         rules.plot_de_te_heatmap_broad.output,
+        rules.plot_de_te_heatmap_gc.output,
+        rules.plot_gc_fdr_jitter.output,
+        rules.plot_pairwise_lfc_comparison_gc.output,
+        rules.plot_pairwise_lfc_comparison_broad.output,
+        rules.plot_pairwise_lfc_corr_dotplot_gc.output,
+        rules.plot_gc_enrichment_overview.output,
+        rules.plot_gc_markers.output,
+        rules.plot_combined_line_counts.output,
+        rules.plot_heatmap_te_expression_pattern.output,
+
+        rules.plot_meiosis_related_signatures.output,
+        rules.plot_xy_detected_gene_scatter.output,

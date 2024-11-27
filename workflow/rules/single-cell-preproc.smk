@@ -33,7 +33,7 @@ rule cluster_adult_cmo:
     output:
         rds = "results/integration/adult.sce.integrated.clustered.rds",
         g_silhouette = "results/integration/adult.g_silhouette.rds",
-        g_coarse_clustering_sweep = "results/integration/adult.g_coarse_clustering_sweep.rds",
+        #g_coarse_clustering_sweep = "results/integration/adult.g_coarse_clustering_sweep.rds",
     script:
         "../scripts/single-cell-preproc/cluster-adult-cmo.R"
 

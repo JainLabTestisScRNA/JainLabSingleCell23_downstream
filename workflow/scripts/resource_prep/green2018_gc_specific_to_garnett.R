@@ -1,3 +1,6 @@
+Sys.setenv(R_PROFILE=".Rprofile")
+source(Sys.getenv("R_PROFILE"))
+
 library(tidyverse)
 library(readxl)
 
@@ -5,10 +8,11 @@ library(readxl)
 x <- read_xlsx("data/green2018_supp3.xlsx",range = "A6:H2625",sheet = "A.GC_Markers")
 
 x |>
+  filter(!str_detect(gene,"mt-|Rik|^RP|^Rps")) |>
   mutate(p_val = as.numeric(p_val)) |>
-  filter(p_val <= 0.01) |>
   mutate(GermCellState = paste0("GC",GermCellState)) |>
   group_by(GermCellState) |>
+  slice_max(pct.1-pct.2,n=20) |>
   summarize(expressed = paste(gene,collapse=", ")) |>
   mutate(ix= row_number()) |>
   mutate(GermCellState=paste0(">",GermCellState)) |>

@@ -1,0 +1,215 @@
+---
+title: "GRR signal"
+format: 
+  html:
+    self-contained: true
+editor: visual
+---
+
+```{r setup, message=F}
+library(scater)
+library(scran)
+library(scuttle)
+library(tidyverse)
+library(AUCell)
+library(fgsea)
+library(readxl)
+
+knitr::opts_knit$set(root.dir = here::here())
+```
+
+## GO term enrichment in spg
+
+When looking at GC subcluster-specific leading edge enrichment we see that MUT spg are enriched for several terms that should have high activity in spermatocytes and spermatids.
+
+```{r fig.height=15, fig.width=10, out.height=10, out.width=20}
+enr <- read_rds("results/enrichment/gsea_prerank.rds") |> map_df(as_tibble,.id="comparison") |> filter(padj < 0.05)
+
+library(tidytext)
+enr |>
+  filter(str_detect(comparison,"Spermat")) |>
+  mutate(color=ifelse(str_detect(pathway,"SPERM|MEIO|PLURI|GAMETE"),"red","darkgray")) |>
+  filter(padj <0.05) |>
+  group_by(comparison, sign(NES)) |>
+  slice_max(abs(NES),n=5) |>
+  ungroup() |>
+  mutate(pathway = tidytext::reorder_within(pathway,sign(NES)*-log10(padj),comparison)) |>
+  arrange(NES) |>
+  ggplot(aes(sign(NES)* -log10(padj),pathway,fill=color)) +
+  geom_col() +
+  scale_y_reordered() +
+  facet_wrap(~comparison,scales="free",ncol=2) +
+  theme(axis.text.y = element_text(size=rel(0.75))) +
+  scale_fill_identity() +
+  guides(fill="none")
+```
+
+I see maybe some relation to Soygur et al. 2021 *Sci. Adv.* They looked at fetal mouse ovary (so not a perfect comparison, of course) and saw that bridge depletion by Tex14 knockout desynchronizes meiotic entry, presumably due to inconsistent sharing of cell-state coordinating factors, e.g. Dppa3.
+
+> ...we found that genes implicated in the pluripotency program such as Sox2 and Pou5f1 were also down-regulated in Sycp3high meiotic germ cells in Tex14−/− (fig. S6C). Such selective loss of a specific group of transcripts subset in Tex14−/− , which lacks cytoplasmic bridges, argues against the possibility that severed bridges during dissociation alter the transcriptome indiscriminately.
+>
+> ...
+>
+> We found that cytoplasmic sharing through Tex14-dependent ICBs is crucial not only for the radial meiotic wave but also for appropriate timing of meiotic initiation. Upon initiation of meiosis, Tex14 mutant germ cells more abruptly deplete transcripts associated with pluripotency such as Dppa3.
+
+```{r}
+sce <- read_rds('results/germ_cells/adult.sce.germ_cell.both_genotypes.subclustered.reintegrated.rds')
+```
+
+Genes plotted below are pluripotency markers highlighted by Soygur et al.
+
+```{r}
+plotExpression(sce,c("Dppa3","Pou5f1","Sox2","Rhox5","Phlda2"),x="label",swap_rownames = "gene_name",other_fields = "genotype") +
+  facet_grid(Feature~genotype) + theme(axis.text.x = element_text(angle=45, hjust=1))
+
+```
+
+Unfortunately, these genes are too low-expressed to have made it into our DE analysis.
+
+```{r}
+lkup <- rowData(sce)[,c("gene_id","gene_name")] |> as_tibble() |> dplyr::rename(feature="gene_id")
+de <- read_tsv("results/differential_expression/adult.tbl.germ_cell.reprocessed.de.tsv.gz") |>
+  left_join(lkup, by="feature") |> dplyr::relocate(gene_name,.before="feature")
+
+filter(de, gene_name %in% c("Dppa3","Pou5f1","Sox2","Rhox5","Phlda2"))
+```
+
+More pluripotency genes from Guan et al 2006.
+
+```{r}
+plotExpression(sce,c("Nanog","Utf1","Zfp42","Dppa5a","Pou5f1","Kit","Myc","Klf4"),x="label",swap_rownames = "gene_name",other_fields = "genotype") +
+  facet_grid(Feature~genotype) + theme(axis.text.x = element_text(angle=45, hjust=1))
+```
+
+```{r}
+filter(de, gene_name %in% c("Nanog","Utf1","Zfp42","Dppa5a","Pou5f1","Kit"))
+```
+
+For both pluripotency gene sets, the pattern is maybe suggestive of extra extreme depletetion of pluripotency tx from MUT, but these genes are generally not significantly DE or are expressed minimally and don't even get analysed in pseudobulk analysis.
+
+## Stemness/demethylation signature?
+
+GRR genes are derived from Hill et al 2018 *Nature*.
+
+```{r}
+grr <- read_xlsx("~/Downloads/41586_2018_BFnature25964_MOESM3_ESM.xlsx",col_names = "gene_name") |> pull(gene_name)
+
+lkup <- tibble(feature=rownames(sce),gene_name = rowData(sce)$gene_name)
+
+de <- read_tsv("results/differential_expression/adult.tbl.germ_cell.reprocessed.de.tsv.gz")
+
+de <- de |> left_join(lkup,by="feature")
+
+ranks <- split(de,de$celltype) |> map(~{dplyr::select(.x,gene_name,logFC)}) |> map(deframe)
+
+# https://bioconductor.org/packages/release/bioc/vignettes/fgsea/inst/doc/geseca-tutorial.html
+
+gmt <- list(GRR =grr)
+
+gseaRes <- map(ranks, ~fgsea(gmt,stats = .x, minSize = 10, maxSize = 300,nproc=1,eps=0))
+
+gseaRes |> map_df(as_tibble,.id="comparison") |>
+  dplyr::select(comparison,pathway,pval,NES,size) |>
+  gt::gt()
+```
+
+```{r}
+m5 <- fgsea::gmtPathways("data/m5.all.v2023.2.Mm.symbols.gmt")
+
+m5 <- m5[str_detect(names(m5),"MEIO|MALE_GAMETE|PLURI")]
+
+line1s <- read_tsv("data/dfam_classification.parsed.txt") |> 
+  filter(classification == "LINE" & dfam_name %in% de$feature) |> 
+  filter(str_detect(classification_long,"L1$")) |>
+  pull(dfam_name)
+
+sigs <- c(list(GRR=grr,LINE1s=line1s),m5)
+
+mat <- counts(sce)
+rownames(mat) <- rowData(sce)$gene_name
+
+rankings <- AUCell_buildRankings(mat,splitByBlocks = T,
+                                 plotStats=F, verbose=FALSE)
+
+# default aucMaxRank = 0.05, but grr is a very small list ~45 genes, so doesn't make sense to cut it that much
+scsig.aucs <- AUCell_calcAUC(sigs, rankings,aucMaxRank = ceiling(0.5 * nrow(rankings)),verbose = T,nCores = 4)
+
+scsig.aucs <- t(assay(scsig.aucs))
+
+stopifnot(all(rownames(scsig.aucs) == colnames(sce)))
+
+dat <- scsig.aucs |>
+  as_tibble(rownames="cell") |>
+  mutate(label = sce$label, genotype = sce$genotype) |>
+  dplyr::relocate(label,genotype,.after=cell) |>
+  pivot_longer(-c(cell,label,genotype))
+
+
+plot_signature <- function(x) {
+  return(dat |>
+           filter(name==x) |>
+           ggplot(aes(label,value,fill=genotype)) +
+           facet_wrap(~name, scales="free") +
+           geom_boxplot())
+}
+
+plot_signature("GRR") + theme(axis.text.x = element_text(angle=45, hjust=1))
+
+plot_signature("LINE1s") + theme(axis.text.x = element_text(angle=45, hjust=1))
+```
+
+4/spermatocyte cells (and to a lesser extent round spermatids) with more GRR activation also experience more LINE1 activation.
+
+```{r fig.height=3, fig.width=15}
+dat |>
+  pivot_wider(names_from = "name",values_from = "value") |>
+  #filter(label %in% c("4/Spermatocyte")) |>
+  ggplot(aes(GRR,LINE1s)) +
+  #geom_point() +
+  ggdensity::geom_hdr_points() +
+  #geom_point() +
+  facet_grid(genotype~label) +
+  theme_dark() +
+  scale_color_viridis_d(option = "F")
+
+```
+
+```{r fig.height=3, fig.width=15}
+dat |>
+  pivot_wider(names_from = "name",values_from = "value") |>
+  #filter(label %in% c("4/Spermatocyte")) |>
+  ggplot(aes(GOBP_MALE_GAMETE_GENERATION,LINE1s)) +
+  #geom_point() +
+  ggdensity::geom_hdr_points() +
+  #geom_point() +
+  facet_grid(genotype~label) +
+  theme_dark() +
+  scale_color_viridis_d(option = "F")
+
+```
+
+```{r}
+sce_4sp_mut <- sce[,sce$label == "4/Spermatocyte" & sce$genotype == "MUT"]
+
+rownames(sce_4sp_mut)
+
+sce_4sp_mut$GRR <- scsig.aucs[colnames(sce_4sp_mut),"GRR"]
+
+sce_4sp_mut$GRR |> hist()
+
+sce_4sp_mut$GRR_group <- ifelse(sce_4sp_mut$GRR > 0.6,"hi","lo")
+
+m.out <- scoreMarkers(sce_4sp_mut, sce_4sp_mut$GRR_group, block=sce_4sp_mut$batch)
+
+m.out$lo |>
+  as_tibble(rownames="feature") |>
+  dplyr::filter(str_detect(feature,"ENSMUSG")) |>
+  slice_min(rank.logFC.cohen,n = 25) |>
+  pull(feature) |>
+  walk(message)
+```
+
+```{r}
+
+sessionInfo()
+```

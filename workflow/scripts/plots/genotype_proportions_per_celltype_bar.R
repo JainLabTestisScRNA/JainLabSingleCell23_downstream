@@ -1,7 +1,11 @@
+Sys.setenv(R_PROFILE=".Rprofile")
+source(Sys.getenv("R_PROFILE"))
+
 library(tidyverse)
 library(scater)
 library(scran)
 library(scuttle)
+library(paletteer)
 
 theme_set(theme_classic())
 
@@ -13,9 +17,10 @@ x <- makePerCellDF(sce) |>
   dplyr::select(cell,label=celltype,genotype,batch)
 
 
-g <- ggplot(x,aes(label,fill=genotype)) +
+g <- ggplot(x,aes(genotype,fill=label)) +
   geom_bar(position="fill") +
-  theme(axis.text.x=element_text(angle=45,hjust=1))
+  theme(axis.text.x=element_text(angle=45,hjust=1)) +
+  scale_fill_paletteer_d("RColorBrewer::Set3")
 
 ggsave(snakemake@output$pdf,g)
 

@@ -2,24 +2,51 @@ rule get_adult_germ_cells:
     input:
         sce = rules.find_celltypes_adult_cmo.output.rds,
     output:
-        rds = "results/germ_cells/adult.sce.integrated.clustered.celltypes.germ_cell.rds",
+        rds = "results/germ_cells/adult.sce.germ_cell.rds",
+        mut_rds = "results/germ_cells/adult.sce.germ_cell.mut.rds",
+        wt_rds = "results/germ_cells/adult.sce.germ_cell.wt.rds",
+        wt_spg_rds = "results/germ_cells/adult.sce.germ_cell.wt.Spermatogonia.rds",
+        wt_spc_rds = "results/germ_cells/adult.sce.germ_cell.wt.Spermatocyte.rds",
+        wt_rspt_rds = "results/germ_cells/adult.sce.germ_cell.wt.RoundSpermatid.rds",
+        wt_espt_rds = "results/germ_cells/adult.sce.germ_cell.wt.Elongating.rds",
     script:
         "../scripts/germ_cells/get-adult-germ-cells.R"
 
-rule reprocess_adult_germ_cells:
+rule subcluster_wt_adult_germ_cells:
     input:
-        sce = rules.get_adult_germ_cells.output.rds,
+        sce = "results/germ_cells/adult.sce.germ_cell.wt.{gc_type}.rds",
     output:
-        rds = "results/germ_cells/adult.sce.integrated.clustered.celltypes.germ_cell.reprocessed.rds",
+        rds = "results/germ_cells/adult.sce.germ_cell.wt.{gc_type}.subclustered.rds",
+    params:
+        k =  lambda wc: config.get("gc_subclusters_k").get(wc.gc_type),
     script:
-        "../scripts/germ_cells/reprocess-adult-germ-cells.R"
+        "../scripts/germ_cells/reprocess-adult-germ-cells_wt.R"
 
-rule get_adult_germ_cells_cell_cycle:
+rule reintegrate_wt_adult_germ_cells:
+    """
+    reintegrate after subclustering broad germ cell types
+    """
     input:
-        sce = rules.reprocess_adult_germ_cells.output.rds,
+        sces = expand("results/germ_cells/adult.sce.germ_cell.wt.{g}.subclustered.rds",g=["Spermatogonia", "Spermatocyte", "RoundSpermatid", "Elongating"]),
     output:
-        rds = "results/germ_cells/adult.sce.integrated.clustered.celltypes.germ_cell.preprocessed.cell_cycle.rds",
-        cc = "results/germ_cells/adult.integrated.clustered.celltypes.germ_cell.cell_cycle_classification.rds",
-    threads: 6,
+        rds = "results/germ_cells/adult.sce.germ_cell.wt.subclustered.reintegrated.rds",
     script:
-        "../scripts/germ_cells/get-adult-germ-cells-cell-cycle.R"
+        "../scripts/germ_cells/reintegrate-adult-germ-cells_wt.R"
+
+rule lift_over_mut_adult_germ_cells:
+    input:
+        wt = "results/germ_cells/adult.sce.germ_cell.wt.subclustered.reintegrated.rds",
+        mut = "results/germ_cells/adult.sce.germ_cell.mut.rds",
+    output:
+        rds = "results/germ_cells/adult.sce.germ_cell.both_genotypes.subclustered.reintegrated.rds",
+        feature_rotation = "results/germ_cells/adult.sce.germ_cell.both_genotypes.subclustered.reintegrated.feature_rotation.rds",
+    script:
+        "../scripts/germ_cells/lift-over-mut-adult-germ-cells.R"
+
+rule find_germ_cell_markers:
+    input:
+        sce = rules.reintegrate_wt_adult_germ_cells.output.rds,
+    output:
+        tsv = "results/germ_cells/adult.sce.germ_cell.wt.subclustered.reintegrated.markers.tsv.gz",
+    script:
+        "../scripts/germ_cells/get_gc_markers.R"
